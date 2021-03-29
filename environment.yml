@@ -1,0 +1,14 @@
+name: orchid
+chanels:
+  - anaconda
+dependencies:
+  - python == 3.8.0
+  - numpy
+  - tqdm
+  - nltk
+  - sqlite
+  - jupyter
+  - pip:
+    - black
+    - pathlib
+    - dataclasses
