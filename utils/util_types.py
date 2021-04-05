@@ -1,7 +1,13 @@
 from dataclasses import dataclass
 from enum import Enum
 
-from typing import Optional, Any, Callable, Dict, List
+from typing import Optional, Callable, Dict, List
+
+
+class EncodingType(Enum):
+
+    SpanBERT = 1
+    RoBERTa = 2
 
 
 class CorrefTokenType(Enum):

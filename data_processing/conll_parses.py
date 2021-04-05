@@ -5,18 +5,13 @@ from pathlib import Path
 from typing import Tuple, Optional, List, Dict
 from utils.util_types import ConllSentence, TokenRange, Morphology, CorrefTokenType
 
+from config.config import Config
+
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
-    parser.add_argument("-i", "--input", help="Path to conll input file")
-    parser.add_argument("-t", "--type", choices=["train", "test", "validate"])
+    parser.add_argument("-c", "--config", help="Path to config file", default="config/config.json")
     return parser.parse_args()
-
-
-def path_check(path: Path) -> Optional[Path]:
-    if path.is_file():
-        return path
-    return None
 
 
 def split_file_2_texts(path: Path) -> List[List[str]]:
@@ -96,11 +91,14 @@ def process_sentences(sentence: List[str]) -> ConllSentence:
 
 def main():
     args = parse_args()
-    path = path_check(Path(args.input))
-
-    if not path:
-        print(f"The path '{args.input}' is not a file")
-        sys.exit()
+    config = Config.load_cfg(Path(args.config))
+    path = (
+        config.data_path.dev
+        if config.model.dev_mode
+        else config.data_path.train
+        if config.model.train
+        else config.config_path.test
+    )
 
     texts = split_file_2_texts(path)
     processed_sentences = [process_sentences(sentence) for sentence in texts]

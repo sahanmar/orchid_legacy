@@ -1,0 +1,14 @@
+{
+    "data": {
+        "train": "data/english_gold_conll/train/train.english.v4_gold_conll",
+        "test": "data/english_gold_conll/test/test.english.v4_auto_conll",
+        "dev": "data/english_gold_conll/dev/dev.english.v4_gold_conll"
+    },
+    "model": {
+        "dev_mode": true,
+        "train": false
+    },
+    "encoding": {
+        "encoding_type": "SpanBERT"
+    }
+}
