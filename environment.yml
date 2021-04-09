@@ -6,8 +6,9 @@ dependencies:
   - numpy
   - tqdm
   - nltk
-  - sqlite
   - jupyter
+  - transformers
+  - pytorch
   - pip:
     - black
     - pathlib

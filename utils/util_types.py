@@ -5,9 +5,8 @@ from typing import Optional, Callable, Dict, List
 
 
 class EncodingType(Enum):
-
-    SpanBERT = 1
-    RoBERTa = 2
+    SpanBERT_base_cased = 1
+    SpanBERT_large_cased = 2
 
 
 class CorrefTokenType(Enum):

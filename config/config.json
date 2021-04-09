@@ -9,6 +9,6 @@
         "train": false
     },
     "encoding": {
-        "encoding_type": "SpanBERT"
+        "encoding_type": "SpanBERT_base_cased"
     }
 }
