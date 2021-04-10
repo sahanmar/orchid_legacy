@@ -32,10 +32,9 @@ class EncodingCfg:
     @staticmethod
     def load_cfg(cfg: Dict[str, str]):
 
-        mapper = {"SpanBERT_base_cased": EncodingType.SpaSpanBERT_base_casednBERT}
+        mapper = {"SpanBERT_base_cased": EncodingType.SpanBERT_base_cased}
 
-        cfg["encoding_type"] = mapper[cfg["encoding_type"]]
-        return EncodingCfg(**cfg)
+        return EncodingCfg(encoding_type=mapper[cfg["encoding_type"]])
 
 
 @dataclass(frozen=True)

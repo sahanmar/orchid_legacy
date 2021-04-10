@@ -7,10 +7,10 @@ dependencies:
   - tqdm
   - nltk
   - jupyter
-  - transformers
   - pytorch
   - pip:
     - black
     - pathlib
     - dataclasses
     - mypy
+    - transformers

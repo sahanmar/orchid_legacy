@@ -40,7 +40,9 @@ def parse_cr(text: str) -> Tuple[int, CorrefTokenType]:
     return int(text[:-1]), CorrefTokenType.end
 
 
-def add_corref_mutable(corref_dict: Dict[int, TokenRange], unprocessed_corref: str, i_token: int) -> None:
+def add_corref_mutable(
+    corref_dict: Dict[int, List[TokenRange]], unprocessed_corref: str, i_token: int
+) -> None:
     for corref in unprocessed_corref.split("|"):
         cr_label, cr_type = parse_cr(corref)
         if cr_label not in corref_dict:
@@ -56,7 +58,7 @@ def add_corref_mutable(corref_dict: Dict[int, TokenRange], unprocessed_corref: s
 def process_sentences(sentence: List[str]) -> ConllSentence:
 
     tokens: Dict[int, Morphology] = {}
-    correferences: Dict[int, TokenRange] = {}
+    correferences: Dict[int, List[TokenRange]] = {}
 
     for i, per_token_annotations in enumerate(sentence):
         (

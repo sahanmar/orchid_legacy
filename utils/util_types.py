@@ -9,6 +9,12 @@ class EncodingType(Enum):
     SpanBERT_large_cased = 2
 
 
+class TensorType(Enum):
+    torch = 1
+    tensorFlow = 2
+    numpy = 3
+
+
 class CorrefTokenType(Enum):
     """
     Correferences are labeled as spans. Thus, more than one 
@@ -46,4 +52,4 @@ class ConllSentence:
     sentence_index: int
     word_tokens: Dict[int, Morphology]
     speaker: str
-    correferences: Dict[int, TokenRange]
+    correferences: Dict[int, List[TokenRange]]
