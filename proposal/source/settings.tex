@@ -1,0 +1,139 @@
+\makeatletter
+
+%% Text class specific LaTeX commands.
+\newenvironment{lyxlist}[1]
+{\begin{list}{}
+{\settowidth{\labelwidth}{#1}
+ \setlength{\leftmargin}{\labelwidth}
+ \addtolength{\leftmargin}{\labelsep}
+ \renewcommand{\makelabel}[1]{##1\hfil}}}
+{\end{list}}
+
+%% Larger \cdot
+\newcommand*{\LargerCdot}{\raisebox{-0.25ex}{\scalebox{1.2}{$\cdot$}}}
+
+%% Algorithms
+% Define a \HEADER{Title} ... \ENDHEADER block
+%\newcommand{\HEADER}[1]{\ALC@it\underline{\textsc{#1}}\begin{ALC@g}}
+%\newcommand{\ENDHEADER}{\end{ALC@g}}
+%\renewcommand*{\ALG@name}{Algorithm}
+%\algsetup{indent=2em} 
+%\renewcommand{\algorithmiccomment}[1]{\hspace{2em}// #1} 
+
+
+%% Footnote style
+%\counterwithout{footnote}{chapter}
+\renewcommand{\thefootnote}{\arabic{footnote}}
+%\renewcommand{\thefootnote}{\fnsymbol{footnote}}
+%\footnote[num]{text}
+%instead of num you can put the number of the symbol you like:
+%1   asterisk    *   2   dagger  †   3   double dagger   ‡
+%4   section symbol  §   5   paragraph   ¶   6   parallel lines  \\
+%7   two asterisks   **  8   two daggers ††  9   two double daggers  ‡‡
+
+
+%% Quotes
+\newcommand\uv[1]{\quotedblbase #1\textquotedblleft}%
+
+%% Defining equality sign
+\newcommand\defeq{\mathrel{\stackrel{\makebox[0pt]{\mbox{\normalfont\tiny def.}}}{=}}}
+
+%% Disable page numbers in the TOC. LOF, LOT (TOC automatically
+%% adds \thispagestyle{chapter} if not overridden
+\addtocontents{toc}{\protect\thispagestyle{empty}}
+%\addtocontents{lof}{\protect\thispagestyle{empty}}
+%\addtocontents{lot}{\protect\thispagestyle{empty}}
+
+%% Shifts the top line of the TOC (not the title) 1cm upwards 
+%% so that the whole TOC fits on 1 page. Additional page size
+%% adjustment is performed at the point where the TOC
+%% is inserted.
+\addtocontents{toc}{\protect\vspace{-1cm}}
+
+
+% Completely avoid orphans (first lines of a new paragraph on the bottom of a page)
+\clubpenalty=9500
+
+% Completely avoid widows (last lines of paragraph on a new page)
+\widowpenalty=9500
+
+% Disable hyphenation of acronyms
+%\hyphenation{CDFA HARDI HiPPIES IKEM InterTrack MEGIDDO MIMD MPFA DICOM ASCLEPIOS MedInria}
+
+%%---------------------------------------------------------------------
+
+%% Print out all vectors in bold type instead of printing an arrow above them
+\renewcommand{\vec}[1]{\boldsymbol{#1}}
+
+% Replace standard \cite by the parenthetical variant \citep
+%\renewcommand{\cite}{\citep}
+
+
+%% Theorem styles
+\theoremstyle{definition}
+\newtheorem{defn}{Definition}[section]
+\newtheorem{lemma}{Lemma}[section]
+\newtheorem{exmp}{Example}[section]
+\newtheorem{thrm}{Theorem}[section]
+\newtheorem{remark}{Remark}[section]
+\newtheorem{crl}{Corollary}[section]
+
+
+%% Norm definition
+%\newcommand{\norm}[1]{\left\lVert#1\right\rVert}
+
+%% Inner product definition
+\newcommand{\inprod}[1]{\left<#1\right>}
+
+%% Function restriction
+\newcommand\restr[2]{{% we make the whole thing an ordinary symbol
+  \left.\kern-\nulldelimiterspace % automatically resize the bar with \right
+  #1 % the function
+  \vphantom{\big|} % pretend it's a little taller at normal size
+  \right|_{#2} % this is the delimiter
+  }}
+
+%% Abs definition
+%\newcommand{\abs}[1]{\left|#1\right|}
+
+%% Circle brackets definition
+\newcommand{\bigbrackets}[1]{\left\big(#1\right\big)}
+
+%% Span
+\DeclareMathOperator{\vecspan}{span}
+
+%% Space after theorems
+%\makeatletter
+%\def\thm@space@setup{%
+%  \thm@preskip=\parskip \thm@postskip=0pt
+%}
+
+%% Vertical line in matrices
+%\newcommand\aug{\fboxsep=-\fboxrule\!\!\!\fbox{\strut}\!\!\!}
+
+\makeatother
+
+%% Language and date
+%\def\documentdate{August 31, 2018}
+\def\documentdate{\today}
+\selectlanguage{american}
+
+%% Toggle tikz parameters
+\usetikzlibrary{calc}
+\usetkzobj{all}
+
+%% Custom right angle marking for tikz in 3D
+\newcommand{\RightAngle}[4][3pt]{%
+        \draw[draw=blue] ($#3!#1!#2$)
+        --($ #3!2!($($#3!#1!#2$)!.5!($#3!#1!#4$)$) $)
+        --($#3!#1!#4$) ;
+        }
+        
+%% Spacing between lines in arrays
+\renewcommand{\arraystretch}{1.5}
+
+%% Multiple columns
+\setlength{\columnsep}{1cm}
+
+%% Custom items in lists
+\def\customitem[#1]{\item[#1\vspace{0pt}]}
