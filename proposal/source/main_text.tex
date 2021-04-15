@@ -30,3 +30,7 @@ The power of the Transformer architecture lies in its encoding and decoding capa
 This gave birth to a lot of transformer-based language models such as the Bidirectional Encoder Representations from Transformers (BERT) \cite{bert-Devlin2019}, its fine-tuned variations \cite{albert-Lan2020,robarta-Liu2019} and further models \cite{gpt-Radford2018,use-Cer2018}. 
 To this date, SpanBERT \cite{spanbert-Joshi2020} has proven to be the most efficient architecture for coreference resolution. 
 Its crucial difference from the standard BERT model is that it learns to predict the content of masked spans of text, taking into account their beginnings and endings, omitting the ability of the base BERT model to predict foregoing  sentences, whereas BERT learns to predict the following sentence for each preceding one and attempts to infer individual masked tokens. 
+
+The first end-to-end coreference resolution model was introduced in \cite{cr-Lee17}. Its crucial difference from its predecessors was that it did not require preprocessing in the form of syntactic parsing or rule-based mention detection, since the model is able to learn mention dependencies on its own to a forerunner-outperforming extent. 
+The main idea of the model is to learn to score pairs of textual spans in such a way that takes into account, firstly, if these spans are entity mentions and, secondly, whether the pair is of type antecedent-descendant in terms of coreference. 
+The goal is to be able to assign to each span an antecedent span.
