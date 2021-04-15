@@ -39,8 +39,58 @@ The goal is to be able to assign to each span an antecedent span. The current st
 The CR scoring model takes as input sequences of high-dimensional word-vectors which were produced by multiple consecutive nonlinear mappings. For that reason, one can assume the resulting language-representing structure is highly nonlinear and noisy. 
 In such cases, nonlinear dimensionality reduction helps to preserve crucial information, e.g. probability distribution \cite{dr-VanderMaaten2014} or structure of neighborhood-based local metric spaces \cite{dr-McInnes2018}, while reducing the dimension and noisiness of the space. 
 Therefore, by learning vector representations with more informative dimensions with, for example, such neural structures as autoencoders \cite{autoencoders-Zabalza2016,autoencoders-Sahay2019} can lead to improved cluster mention classification results. 
-In addition to that, the sequential nature of text and the need to classify relations between entity mentions puts CR close to the field of NER where, for instance, CRFs have proven to be a good addition \cite{ner-Strakova2019} to the sequence-labeling model in the endeavor to learn correct token labels, which is a problem with combinatorial complexity. 
+In addition to that, the sequential nature of text and the need to classify relations between entity mentions puts CR close to the field of NER where, for instance, CRFs \cite{ner-Strakova2019,ner-Zhanming2019} and attention \cite{ner-Yamada2020} have proven to be good additions  to the sequence-labeling model in the endeavor to learn correct token labels, which is a problem with combinatorial complexity. 
 We aim to utilize the knowledge of these aforementioned fields and adapt it to the CR problem to improve the existing framework.
 
+{\color{red}
 Uncertainty...
 Data...
+}
+
+% ================================================
+\section{Work Packages}\label{sec:wp}
+
+\subsection*{WP1: State-of-the-Art Models Optimization and Fine-tuning}
+
+\begin{description}
+	\item [T1.1] Further enhancement of the state-of-the-art models in PyTorch (\textit{Marko Sahan}) and TensorFlow 2 (\textit{Vladislav Belov}) to support cluster computation optimization and generalization for various text representation mechanisms.
+	\item [T1.2] Creation of an environment which is capable of assessing and analyzing the quality of the resulting models in a meaningful and comparable way. (\textit{Vladislav Belov, Marko Sahan})
+
+\end{description}
+
+
+\subsection*{WP2: Active-Learning-powered Multilingual Data Corpora Creation}
+
+ The datasets used for coreference resolution are very limited. The most well known dataset that is used for coreference resolution is OntoNotes 5 \cite{ontonotes5-Weischedel2013} and it is only available in English, Chinese and Arabic languages. Thus, another objective of the research is the creation of Czech and Slovak datasets.
+
+We would like to introduce the Active Learning data corpuses creation. The experiment is based on the “smart” way of the data collection when the uncertainty based algorithm will choose the unlabeled data by itself and transfer the instances to the annotators for obtaining the labels. 
+
+\begin{description}
+	\item [T2.1] Prepare the active learning data collection and labeling environment.
+Modern approach of the data collection is based on the random selection of the documents that may meet some criteria like duplicates removal, etc.. The data for the Czech and Slovak corpus are going to be extracted from {\color{red} WE NEED A RESOURCE}. Recent approaches showed that it is possible to select the data iteratively with the help of the uncertainty based model feedback [http://proceedings.mlr.press/v70/gal17a/gal17a.pdf, https://arxiv.org/pdf/1807.04801.pdf]. The following approach brings the higher quality data selection that also results in less labeling iterations and lower financial expenses. (\textit{Marko Sahan, Vladislav Belov})
+	\item [T2.2] Creation of Czech and Slovak Data Corpuses. The annotations are going to run in the prepared environment from the previous task. In order to reduce the amount of human efforts we will bootstrap the data for the annotations. The bootstrapping approach is based on pre-labeling the Czech and Slovak data with the usage of existing superstructure CR model that uses language independent embeddings for Czech and Slovak language encodings. Described approach will let the annotators to get on average, only task relevant data.
+In the first iteration, the target estimate is to have at least 30k-50k annotated sentences for the Czech language. In the second iteration Slovak language data corpus will be collected. The target estimate regarding the annotations is the same as for Czech language (30k-50k). Marko Sahan has the experience of partially leading the end to end 20k sentences corporate corpus creation with entity-to-entity information link labels.  (\textit{Marko Sahan, Vladislav Belov})
+	\item [T2.3] Creation of Multilingual validation Data Corpuses. 
+Modern algorithms have a clear traction towards the language independent approaches [LASER, mBERT]. Thus, the generalization of a coreference task is obvious. Language independent embeddings approach [] is a representation of the same semantic structures with the same, or at least similar (with respect to a specific metric) vectors. Hence, models trained in English must be able to work with different languages. However, in practice, if the model is not fine tuned with another language that it makes predictions for, the error rate of the predicted instances will be higher (this is the reason for T2.1). Nevertheless, modern state of the art approaches were not tested or evaluated on the multilingual datasets either due to the lack of the quality data or due to the fact that the CR field is relatively young. We expect to create 2k testing data corpuses for French, German, Spanish and Turkish. (\textit{Marko Sahan, Vladislav Belov})
+\end{description}
+
+
+\subsection*{WP3: Multilingual Coreference Resolution Model}
+
+WP3 T3.3 and T3.4  are strongly dependent on WP1 and WP2. However WP3 T3.1 can be done in parallel with the WP2 annotation procedure.
+
+\begin{description}
+	\item [T3.1] Investigation of influence of (nonlinear) dimensionality reduction on mention clusters in an attempt to reduce the number of noisy dimensions and improve shapes of these clusters. In a neural-network model, a nonlinear mapping onto a lower-dimensional de-noised manifold can be achieved with autoencoders \cite{autoencoders-Zabalza2016,autoencoders-Sahay2019}. Moreover, since the models for named entity recognition (NER) also work with entity mentions, examination of superstructures designed for NER, e.g. Conditional Random Fields (CRF) \cite{ner-Strakova2019,ner-Zhanming2019} and entity-aware attention \cite{ner-Yamada2020}, applied on the coreference resolution problem will be further explored. (\textit{Vladislav Belov})
+	\item [T3.2] The grand research from Google [https://arxiv.org/pdf/1906.02530.pdf] shows that the point wise estimate of model’s parameters does not usually result in an optimal approach. Based on our preliminary results, we believe that the models’ parameter distribution estimate based on uncertainty algorithms e.g. deep ensembles [https://arxiv.org/pdf/1612.01474.pdf], MC Dropout [http://proceedings.mlr.press/v70/gal17a/gal17a.pdf] or SGLD [https://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.441.3813\&rep=rep1\&type=pdf] will bring more efficient results. Back in 2017, the deep ensembles approach for a CR problem [https://www.aclweb.org/anthology/D17-1018.pdf] showed a significant increase (3\% F1) in the output metrics. Thus, we expect to bring more significant improvements with addition of more sophisticated uncertainty based algorithms. (\textit{Marko Sahan})
+	\item [T3.3] Generalization to multilingual CR superstructure via usage of multilingual NLU models will allow us to evaluate (retrain and test) the CR superstructure from WP1 on the data from WP2 both for base state-of-the-art models and improved models with potentially a more efficient architecture and the uncertainty representations algorithms. The environment prepared in WP1 will enable us to retrain and to get the results consistently and in faster timelines. (\textit{Vladislav Belov, Marko Sahan})	
+	\item  [T3.4] The data from T3.3 will allow us to understand the metric baseline for the Multilingual CR model. In the first step, we expect the results from this step to be sufficient enough for their publication as so far no Deep Learning CR results are available for Czech and Slovak languages. (\textit{Marko Sahan, Vladislav Belov})
+
+\end{description}
+
+
+% ================================================
+\section{Research Team}\label{sec:research_team}
+\begin{description}
+	\item Ing. Marko Sahan
+	\item Ing. Vladislav Belov
+\end{description}
