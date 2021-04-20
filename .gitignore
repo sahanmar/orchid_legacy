@@ -2,3 +2,5 @@ data/
 .vscode/
 __pycache__
 Build
+*.bib.sav
+*.bib.bak
