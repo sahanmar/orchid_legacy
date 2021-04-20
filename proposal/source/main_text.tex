@@ -30,8 +30,11 @@ The model uncertainty measurement and its representation is done through the emp
 The uncertainty representation approach provides the model with the expanded vision of both model learning and inference. 
 The described technique has shown that such algorithms may enhance the learning process significantly \cite{ovadia2019can}.
 
-As another output of this project, we expect to not only push the boundaries of the state-of-the-art algorithms but also introduce the first Czech and Slovak Coreference Resolution dataset that can be used as a new benchmark for the Czech and Slovak CR models evaluation. Based on the new data and better Coreference Resolution approach, we would like to generalize the CR algorithm as a Multilingual solution.
 
+{\color{red}
+As another output of this project, we expect to not only push the boundaries of the state-of-the-art algorithms but also create a new Czech and introduce the first Slovak Coreference Resolution datasets generated in an active-learning-powered environment.
+Based on the new data and better Coreference Resolution approach, we would like to generalize the CR algorithm as a Multilingual solution.
+}
 
 % ================================================
 \section{State of the Art}\label{sec:sota}
@@ -52,7 +55,10 @@ Its crucial difference from the standard BERT model is that it learns to predict
 The first end-to-end coreference resolution model was introduced in \cite{cr-Lee17}. Its crucial difference from its predecessors was that it did not require preprocessing in the form of syntactic parsing or rule-based mention detection, since the model is able to learn mention dependencies on its own to a forerunner-outperforming extent. 
 The main idea of the model is to learn to score pairs of textual spans in such a way that takes into account, firstly, if these spans are entity mentions and, secondly, whether the pair is of type antecedent-descendant in terms of coreference.
 Span representations are provided by the NLU model of choice. 
-The goal is to be able to assign to each span an antecedent span. The current state-of-the-art approach \cite{cr-Joshi2019} utilizes the same structure on top of SpanBERT. One of the crucial drawbacks of the scoring approach is the choice of spans: sizes of relevant spans can be different so a constant width of the window may not always be the right choice; spans can either overlap or be disjoint; if they overlap, the value of how large the overlap is also becomes a hyperparameter. In addition to that, the number of scoring procedures is quadratic in complexity: each span has to be scored against every its counterpart. If the length of the document is large, the memory needed to store all entity mentions may become an issue (in \cite{cr-Xia2020} authors propose an incremental structure for the CR model which needs a lot less memory for the price of a slight decrease in performance).
+The goal is to be able to assign to each span an antecedent span. The current state-of-the-art approach \cite{cr-Joshi2019} utilizes the same structure on top of SpanBERT. 
+One of the crucial drawbacks of the scoring approach is the choice of spans: sizes of relevant spans can be different so a constant width of the window may not always be the right choice; spans can either overlap or be disjoint; if they overlap, the value of how large the overlap is also becomes a hyperparameter. 
+In addition to that, the number of scoring procedures is quadratic in complexity: each span has to be scored against every its counterpart. 
+If the length of the document is large, the memory needed to store all entity mentions may become an issue (in \cite{cr-Xia2020} authors propose an incremental structure for the CR model which needs a lot less memory for the price of a slight decrease in performance).
 
 The CR scoring model takes as input sequences of high-dimensional word-vectors which were produced by multiple consecutive nonlinear mappings. For that reason, one can assume the resulting language-representing structure is highly nonlinear and noisy. 
 In such cases, nonlinear dimensionality reduction helps to preserve crucial information, e.g. probability distribution \cite{dr-VanderMaaten2014} or structure of neighborhood-based local metric spaces \cite{dr-McInnes2018}, while reducing the dimension and noisiness of the space. 
@@ -65,6 +71,14 @@ Thus, the model parameters estimated based on uncertainty algorithms: i) deep en
 Back in 2017, the deep ensembles approach for a CR problem \cite{cr-Lee17} showed a significant increase (3\% F1) in the output metrics which confirms the veracity of the concept.
 
 We aim to utilize the knowledge of these aforementioned fields and adapt it to the CR problem to improve the existing framework.
+
+{\color{red}
+For languages other than English, the state of the art for the CR is arguably even farther behind. 
+For example, coreference resolution for Czech was attempted on the PCEDT dataset \cite{pcedt-Hajic2012} in \cite{cr-cz-Novak17}; however, the overall performance of the approach does not reach the mark of 0.7 in terms of F-score. 
+In addition to that, no transformer-based NLU model was available at the time. 
+We aim to address this in our research, as SpanBERT demonstrates superior performance to other neural supervised techniques.
+
+}
 
 % ================================================
 \section{Work Packages}\label{sec:wp}
@@ -91,19 +105,23 @@ We aim to utilize the knowledge of these aforementioned fields and adapt it to t
 
 \subsection*{WP2: Active-Learning-powered Multilingual Data Corpora Creation}
 
- The datasets used for coreference resolution are very limited. The most well known dataset that is used for coreference resolution is OntoNotes 5 \cite{ontonotes5-Weischedel2013} and it is only available in English, Chinese and Arabic languages. Thus, another objective of the research is the creation of Czech and Slovak datasets.
+ The datasets used for coreference resolution are very limited. The most well known dataset that is used for coreference resolution is OntoNotes 5 \cite{ontonotes5-Weischedel2013} and it is only available in English, Chinese and Arabic languages. {\color{red}
+ Thus, another objective of the research is the creation of new Czech and Slovak datasets which can be easily used for benchmarks with our neural models.
+ We are aware of existence of server CR corpora available, even for Czech \cite{cr-mult-Nedoluzhko2021}. 
+ In the case that those corpora access is restricted we will create another CR corpus specifically designed for our research aims (active learning environment).  
+ }
 
-We would like to introduce the Active Learning data corpuses creation. The experiment is based on the “smart” way of the data collection when the uncertainty based algorithm will choose the unlabeled data by itself and transfer the instances to the annotators for obtaining the labels. 
+We would like to introduce the Active Learning data corpora creation. The experiment is based on the “smart” way of the data collection when the uncertainty based algorithm will choose the unlabeled data by itself and transfer the instances to the annotators for obtaining the labels. 
 
 \begin{description}
 	\item [T2.1 Active-Learning-powered Labeling Environment (Belov, Sahan)] Prepare the active learning data collection and labeling environment.
-Modern approach of the data collection is based on the random selection of the documents that may meet some criteria like duplicates removal, etc.. The data for the Czech and Slovak corpus are going to be extracted from online news media and czech wiki servers. Recent approaches showed that it is possible to select the data iteratively with the help of the uncertainty based model feedback \cite{gal2017deep, lowell2018practical}. The following approach brings the higher quality data selection that also results in less labeling iterations and lower financial expenses.
+Modern approach of the data collection is based on the random selection of the documents that may meet some criteria like duplicates removal, etc.. The data for the Czech and Slovak corpus are going to be extracted from online news media and Czech wiki servers. Recent approaches showed that it is possible to select the data iteratively with the help of the uncertainty based model feedback \cite{gal2017deep, lowell2018practical}. The following approach brings the higher quality data selection that also results in less labeling iterations and lower financial expenses.
 
-	\item [T2.2 Czech \& Slovak Active-Learning-based Data Collection (Belov, Sahan)] Creation of Czech and Slovak Data Corpuses. The annotations are going to run in the prepared environment from the previous task. In order to reduce the amount of human efforts we will bootstrap the data for the annotations. The bootstrapping approach is based on pre-labeling the Czech and Slovak data with the usage of existing superstructure CR model that uses language independent embeddings for Czech and Slovak language encodings. Described approach will let the annotators to get on average, only task relevant data.
+	\item [T2.2 Czech \& Slovak Active-Learning-based Data Collection (Belov, Sahan)] Creation of Czech and Slovak Data Corpora. The annotations are going to run in the prepared environment from the previous task. In order to reduce the amount of human efforts we will bootstrap the data for the annotations. The bootstrapping approach is based on pre-labeling the Czech and Slovak data with the usage of existing superstructure CR model that uses language independent embeddings for Czech and Slovak language encodings. Described approach will let the annotators to get on average, only task relevant data.
 In the first iteration, the target estimate is to have at least 30k-50k annotated sentences for the Czech language. In the second iteration Slovak language data corpus will be collected. The target estimate regarding the annotations is the same as for Czech language (30k-50k). Marko Sahan has the experience of partially leading the end to end 20k sentences corporate corpus creation with entity-to-entity information link labels.  
 
-	\item [T2.3 Multilingual Corpus Extension (Belov, Sahan)] Creation of Multilingual validation Data Corpuses. 
-Modern algorithms have a clear traction towards the language independent approaches like LASER \cite{artetxe2019massively}. Thus, the generalization of a coreference task is obvious. Language independent embeddings approach is a representation of the same semantic structures with the same, or at least similar (with respect to a specific metric) vectors. Hence, models trained in English must be able to work with different languages. However, in practice, if the model is not fine tuned with another language that it makes predictions for, the error rate of the predicted instances will be higher (this is the reason for T2.1). Nevertheless, modern state of the art approaches were not tested or evaluated on the multilingual datasets either due to the lack of the quality data or due to the fact that the CR field is relatively young. We expect to create 2k testing data corpuses for French, German, Spanish and Turkish. 
+	\item [T2.3 Multilingual Corpus Extension (Belov, Sahan)] Creation of Multilingual validation Data Corpora. 
+Modern algorithms have a clear traction towards the language independent approaches like LASER \cite{artetxe2019massively}. Thus, the generalization of a coreference task is obvious. Language independent embeddings approach is a representation of the same semantic structures with the same, or at least similar (with respect to a specific metric) vectors. Hence, models trained in English must be able to work with different languages. However, in practice, if the model is not fine tuned with another language that it makes predictions for, the error rate of the predicted instances will be higher (this is the reason for T2.1). Nevertheless, modern state of the art approaches were not tested or evaluated on the multilingual datasets either due to the lack of the quality data or due to the fact that the CR field is relatively young. We expect to create 2k testing data corpora for French, German, Spanish and Turkish. 
 
 \end{description}
 
