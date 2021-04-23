@@ -1,17 +1,8 @@
-import argparse
-import sys
-
 from pathlib import Path
 from typing import Tuple, Optional, List, Dict
 from utils.util_types import ConllSentence, TokenRange, Morphology, CorrefTokenType
 
 from config.config import Config
-
-
-def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-c", "--config", help="Path to config file", default="config/config.json")
-    return parser.parse_args()
 
 
 class ConllParser:
@@ -34,7 +25,7 @@ class ConllParser:
         return ConllParser(path)
 
     def add_corref_mutable(
-        self, corref_dict: Dict[int, List[TokenRange]], unprocessed_corref: str, i_token: int
+        self, corref_dict: Dict[int, List[TokenRange]], unprocessed_corref: str, i_token: int,
     ) -> None:
         for corref in unprocessed_corref.split("|"):
             cr_label, cr_type = self.parse_cr(corref)

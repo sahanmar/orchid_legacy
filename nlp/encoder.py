@@ -1,12 +1,13 @@
 import sys
 import torch
 import numpy as np
+import hashlib
 
 from typing import Dict, List, TypeVar, Union, Optional
 from transformers import AutoTokenizer, AutoModel  # type: ignore
 
 from config.config import EncodingCfg
-
+from data_processing.cacher import Cacher
 from utils.util_types import EncodingType, TensorType
 from utils.utils import out_of_menu_exit
 
@@ -64,15 +65,19 @@ class GeneralisedBertEncoder:
         return {
             "input_ids": tokenized["input_ids"],
             "tensors": tensors["last_hidden_state"],
-            "original_tokens": self._pbe_to_original_tokens_indices(pbe_tokens),
+            "original_tokens": self._bpe_to_original_tokens_indices(pbe_tokens),
         }
 
     def encode_many(
-        self, tokenized_sentences: List[List[str]], tensors_type: TensorType = TensorType.torch
+        self,
+        tokenized_sentences: List[List[str]],
+        tensors_type: TensorType = TensorType.torch,
+        cacher: Optional[Cacher] = None,
     ) -> List[Dict[str, Union[Tensor, List[List[int]]]]]:
         encoded_sentences: List[Dict[str, Union[Tensor, List[List[int]]]]] = []
         for i, sentence in enumerate(tokenized_sentences):
-            encoded_sent = self.get_cached(naive_hash(i, sentence))
+            # This is not good. Rework
+            encoded_sent = cacher.get_from_cache(naive_sha1_hash(i, sentence)) if cacher else None
             encoded_sentences.append(
                 encoded_sent if encoded_sent else self(sentence, tensors_type)  # type: ignore
             )
@@ -82,7 +87,7 @@ class GeneralisedBertEncoder:
         return None
 
     @staticmethod
-    def _pbe_to_original_tokens_indices(pbe_tokens: List[str]) -> List[List[int]]:
+    def _bpe_to_original_tokens_indices(pbe_tokens: List[str]) -> List[List[int]]:
         """
         Please keep in mind that this method works for BERT based models only
         """
@@ -100,5 +105,5 @@ class GeneralisedBertEncoder:
         return tokens
 
 
-def naive_hash(index: int, text: List[str]) -> str:
-    return "".join([str(index), *text])
+def naive_sha1_hash(index: int, text: List[str]) -> str:
+    return hashlib.sha1("".join([str(index), *text]).encode()).hexdigest()

@@ -6,7 +6,7 @@ from config.config import Config, DataPaths
 from pipeline import OrchidPipeline
 from utils.util_types import Response
 
-config = Config.load_cfg(Path("test_stages/test_config.json"))
+config = Config.load_config(Path("test_stages/test_config.json"))
 
 
 class PipelineTest(unittest.TestCase):

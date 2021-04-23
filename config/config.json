@@ -10,5 +10,9 @@
     },
     "encoding": {
         "encoding_type": "SpanBERT_base_cased"
+    },
+    "cache": {
+        "path": "cache/",
+        "tensor_type": "pt"
     }
 }
