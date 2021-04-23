@@ -30,6 +30,11 @@ class CorrefTokenType(Enum):
     full = 3
 
 
+class Response(Enum):
+    success = 0
+    fail = 1
+
+
 class TokenRange:
     def __init__(self, start: int, end: int):
         self.start = start
@@ -50,6 +55,11 @@ class Morphology:
 class ConllSentence:
     folder: str
     sentence_index: int
-    word_tokens: Dict[int, Morphology]
+    word_tokens: List[Morphology]
     speaker: str
     correferences: Dict[int, List[TokenRange]]
+
+
+@dataclass
+class PipelineOutput:
+    state: Response

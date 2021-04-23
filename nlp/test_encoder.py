@@ -1,17 +1,19 @@
 import unittest
 
 from nlp.encoder import GeneralisedBertEncoder
+from config.config import EncodingCfg
 from utils.util_types import EncodingType
 
 
 class EncodingTest(unittest.TestCase):
     def test_encdoing(self):
-        encoding_model = GeneralisedBertEncoder.load_model(EncodingType.SpanBERT_base_cased)
+        cfg = EncodingCfg(EncodingType.SpanBERT_base_cased)
+        encoding_model = GeneralisedBertEncoder.from_config(cfg)
 
         text = "It is Saturday and instead of being out I am wring these test cases ."
         tokenized_text = text.split()
 
-        encoded = encoding_model.encode_tokens(tokenized_text)
+        encoded = encoding_model(tokenized_text)
 
         # test if ids are correct
         self.assertEqual(

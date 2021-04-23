@@ -2,8 +2,10 @@ import sys
 import torch
 import numpy as np
 
-from typing import Dict, List, TypeVar, Union
+from typing import Dict, List, TypeVar, Union, Optional
 from transformers import AutoTokenizer, AutoModel  # type: ignore
+
+from config.config import EncodingCfg
 
 from utils.util_types import EncodingType, TensorType
 from utils.utils import out_of_menu_exit
@@ -29,19 +31,19 @@ class GeneralisedBertEncoder:
         self.tokenizer = tokenizer
 
     @staticmethod
-    def load_model(model_type: EncodingType):
+    def from_config(config: EncodingCfg) -> "GeneralisedBertEncoder":
 
-        if model_type.value not in ENCODER_MAPPER:
+        if config.encoding_type.value not in ENCODER_MAPPER:
             out_of_menu_exit(text="encoder")
 
-        encoder = ENCODER_MAPPER[model_type.value]
+        encoder = ENCODER_MAPPER[config.encoding_type.value]
 
         model = AutoModel.from_pretrained(encoder)
         tokenizer = AutoTokenizer.from_pretrained(encoder)
 
         return GeneralisedBertEncoder(model, tokenizer)
 
-    def encode_tokens(
+    def __call__(
         self, tokens: List[str], tensors_type: TensorType = TensorType.torch
     ) -> Dict[str, Union[Tensor, List[List[int]]]]:
 
@@ -65,6 +67,20 @@ class GeneralisedBertEncoder:
             "original_tokens": self._pbe_to_original_tokens_indices(pbe_tokens),
         }
 
+    def encode_many(
+        self, tokenized_sentences: List[List[str]], tensors_type: TensorType = TensorType.torch
+    ) -> List[Dict[str, Union[Tensor, List[List[int]]]]]:
+        encoded_sentences: List[Dict[str, Union[Tensor, List[List[int]]]]] = []
+        for i, sentence in enumerate(tokenized_sentences):
+            encoded_sent = self.get_cached(naive_hash(i, sentence))
+            encoded_sentences.append(
+                encoded_sent if encoded_sent else self(sentence, tensors_type)  # type: ignore
+            )
+        return encoded_sentences
+
+    def get_cached(self, hash: str) -> Optional[Dict[str, Union[Tensor, List[List[int]]]]]:
+        return None
+
     @staticmethod
     def _pbe_to_original_tokens_indices(pbe_tokens: List[str]) -> List[List[int]]:
         """
@@ -82,3 +98,7 @@ class GeneralisedBertEncoder:
             tokens.append([i])
 
         return tokens
+
+
+def naive_hash(index: int, text: List[str]) -> str:
+    return "".join([str(index), *text])
