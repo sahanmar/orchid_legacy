@@ -1,6 +1,17 @@
 # Orchid Project 
+![vanilla orchid](https://github.com/sahanmar/orchid/blob/imgs/imgs/orchid.png)
 
-This project is aimed on a development of a new state of the art coreference resolution algorithm
+Orchid or in other words Vanilla Orchid project is aimed on a development of a new-state-of-the-art coreference resolution algorithm(s*)
+
+## Structure ⚙
+
+We build this project on the top of mega fancy state-of-the-art language understanding transformers models e.g. [SpanBERT](https://arxiv.org/abs/1907.10529). 
+
+The most important things about the building of the project locally:
+1. [config.json](https://github.com/sahanmar/orchid/blob/main/config/config.json) file where you can change all the dependencies in one place and then run your code right away! 
+2. If you want to know how the whole pipeline works, just simply go to [pipeline.py]() and check both comments and code.
+
+**N.B.** The project is WIP and is going to grow <s>daily</s> weekly! 
 
 ## Data 💽
 
@@ -29,5 +40,3 @@ If you are not a genius same as me, you can use a [Marvelous Blogpost](https://m
    * `cat conll-2012/v4/data/test/data/my_lang/annotations/*/*/*/*.v4_auto_conll >> test.my_lang.v4_auto_conll`
     
     Put all these data to separate folders `train`, `test` and `dev` and you are all set!
-
-### Data import

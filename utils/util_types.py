@@ -5,9 +5,14 @@ from typing import Optional, Callable, Dict, List
 
 
 class EncodingType(Enum):
+    SpanBERT_base_cased = 1
+    SpanBERT_large_cased = 2
 
-    SpanBERT = 1
-    RoBERTa = 2
+
+class TensorType(Enum):
+    torch = 1
+    tensorFlow = 2
+    numpy = 3
 
 
 class CorrefTokenType(Enum):
@@ -23,6 +28,11 @@ class CorrefTokenType(Enum):
     start = 1
     end = 2
     full = 3
+
+
+class Response(Enum):
+    success = 0
+    fail = 1
 
 
 class TokenRange:
@@ -45,6 +55,11 @@ class Morphology:
 class ConllSentence:
     folder: str
     sentence_index: int
-    word_tokens: Dict[int, Morphology]
+    word_tokens: List[Morphology]
     speaker: str
-    correferences: Dict[int, TokenRange]
+    correferences: Dict[int, List[TokenRange]]
+
+
+@dataclass
+class PipelineOutput:
+    state: Response
