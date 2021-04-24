@@ -5,6 +5,7 @@ from pathlib import Path
 from config.config import Config, DataPaths
 from pipeline import OrchidPipeline
 from utils.util_types import Response
+from data_processing.cacher import Cacher
 
 config = Config.load_config(Path("test_stages/test_config.json"))
 
@@ -17,7 +18,10 @@ class PipelineTest(unittest.TestCase):
 
     def test_pipeline_fail_no_cache(self):
         fail_config = Config(
-            data_path=DataPaths(Path(""), Path(""), Path("")), model=config.model, encoding=config.encoding
+            data_path=DataPaths(Path(""), Path(""), Path("")),
+            model=config.model,
+            encoding=config.encoding,
+            cache=config.cache,
         )
         pipeline = OrchidPipeline.from_config(fail_config)
         pipeline_output = pipeline()

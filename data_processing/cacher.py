@@ -1,6 +1,5 @@
 import torch
 import numpy as np
-import csv
 
 from pathlib import Path
 from typing import Dict, List, TypeVar, Union, Optional
@@ -17,7 +16,7 @@ class Cacher:
 
         self.path = cache_path
         self.tensor_type = tensor_type
-        self.cached_ids = set(el.stem() for el in self.path.iterdir() if el.is_dir())
+        self.cached_ids = set(el.name for el in self.path.iterdir() if el.is_dir())
 
     @staticmethod
     def from_config(config: CacheCfg) -> "Cacher":
@@ -26,23 +25,24 @@ class Cacher:
     def create_cache(self, hash: str, encoded_instance: Dict[str, Union[Tensor, List[List[int]]]]) -> None:
         instance_dir_path = self.path / hash
         mkdir_if_not_exist(instance_dir_path)
-        tensor_dir_path = instance_dir_path / self.tensor_type.value
+        tensor_dir_path = instance_dir_path / str(self.tensor_type.value)
         mkdir_if_not_exist(tensor_dir_path)
         self.write_tensors(tensor_dir_path / "input_ids", encoded_instance["input_ids"])
         self.write_tensors(tensor_dir_path / "tensors", encoded_instance["tensors"])
         self.write_original_tokens_ids(
-            instance_dir_path / "original_tokens.csv", encoded_instance["original_tokens"]
+            instance_dir_path / "original_tokens.txt", encoded_instance["original_tokens"]
         )
+        self.cached_ids = set(el.name for el in self.path.iterdir() if el.is_dir())
 
     def get_from_cache(self, hash: str) -> Optional[Dict[str, Union[Tensor, List[List[int]]]]]:
         if hash not in self.cached_ids:
             return None
         instance_dir_path = self.path / hash
-        tensor_dir_path = instance_dir_path / self.tensor_type.value
+        tensor_dir_path = instance_dir_path / str(self.tensor_type.value)
         return {
             "input_ids": self.load_tensor(tensor_dir_path / "input_ids"),
             "tensors": self.load_tensor(tensor_dir_path / "tensors"),
-            "original_tokens": self.load_original_tokens_ids(instance_dir_path / "original_tokens.csv"),
+            "original_tokens": self.load_original_tokens_ids(instance_dir_path / "original_tokens.txt"),
         }
 
     def write_tensors(self, path: Path, tensor: Tensor) -> None:
@@ -60,15 +60,16 @@ class Cacher:
     @staticmethod
     def write_original_tokens_ids(path: Path, token_ids: List[List[int]]) -> None:
         with open(path, "w") as f:
-            wr = csv.writer(f)
-            wr.writerows(token_ids)
+            for token in token_ids:
+                f.write("%s\n" % " ".join([str(t) for t in token]))
 
     @staticmethod
     def load_original_tokens_ids(path: Path) -> List[List[int]]:
+        token_ids = []
         with open(path, "r") as f:
-            rows = csv.reader(f)
-            data = list(zip(*rows))
-        return [[int(bpe_id) for bpe_id in token] for token in data]
+            for line in f.readlines():
+                token_ids.append([int(val) for val in line.strip().split()])
+        return token_ids
 
 
 def mkdir_if_not_exist(path: Path) -> None:

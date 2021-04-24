@@ -75,12 +75,15 @@ class GeneralisedBertEncoder:
         cacher: Optional[Cacher] = None,
     ) -> List[Dict[str, Union[Tensor, List[List[int]]]]]:
         encoded_sentences: List[Dict[str, Union[Tensor, List[List[int]]]]] = []
+        if cacher is None:
+            return [self(sentence, tensors_type) for sentence in tokenized_sentences]
         for i, sentence in enumerate(tokenized_sentences):
-            # This is not good. Rework
-            encoded_sent = cacher.get_from_cache(naive_sha1_hash(i, sentence)) if cacher else None
-            encoded_sentences.append(
-                encoded_sent if encoded_sent else self(sentence, tensors_type)  # type: ignore
-            )
+            hashed_text = naive_sha1_hash(i, sentence)
+            encoded_sent = cacher.get_from_cache(hashed_text)
+            if encoded_sent is None:
+                encoded_sent = self(sentence, tensors_type)
+                cacher.create_cache(hashed_text, encoded_sent)
+            encoded_sentences.append(encoded_sent)
         return encoded_sentences
 
     def get_cached(self, hash: str) -> Optional[Dict[str, Union[Tensor, List[List[int]]]]]:
