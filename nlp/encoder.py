@@ -79,7 +79,7 @@ class GeneralisedBertEncoder:
             return [self(sentence, tensors_type) for sentence in tokenized_sentences]
         for i, sentence in enumerate(tokenized_sentences):
             hashed_text = naive_sha1_hash(i, sentence)
-            encoded_sent = cacher.get_from_cache(hashed_text)
+            encoded_sent = cacher.get_from_cache(hashed_text)  # type: ignore
             if encoded_sent is None:
                 encoded_sent = self(sentence, tensors_type)
                 cacher.create_cache(hashed_text, encoded_sent)
