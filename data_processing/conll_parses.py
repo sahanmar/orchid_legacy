@@ -11,7 +11,16 @@ class ConllParser:
 
     def __call__(self) -> List[ConllSentence]:
         texts = self.split_file_2_texts(self.path)
-        return [self.process_sentences(sentence) for sentence in texts]
+
+        parsed_sentences: List[ConllSentence] = []
+        sent_i = 0
+        for sentence in texts:
+            if sentence == "art_break":
+                sent_i = 0
+            parsed_sentences.append(self.process_sentence(sentence, sent_i))
+            sent_i += 1
+
+        return parsed_sentences
 
     @staticmethod
     def from_config(config: Config) -> "ConllParser":
@@ -38,7 +47,7 @@ class ConllParser:
             else:
                 corref_dict[cr_label][-1].end = i_token + 1
 
-    def process_sentences(self, sentence: List[str]) -> ConllSentence:
+    def process_sentence(self, sentence: List[str], sent_index) -> ConllSentence:
 
         tokens: List[Morphology] = []
         correferences: Dict[int, List[TokenRange]] = {}
@@ -67,7 +76,7 @@ class ConllParser:
 
         return ConllSentence(
             folder=folder,
-            sentence_index=int(i_sent_str),
+            sentence_index=int(sent_index),
             word_tokens=tokens,
             speaker=speaker,
             correferences=correferences,
@@ -81,7 +90,10 @@ class ConllParser:
 
         with open(path, "r") as f:
             for line in f.readlines():
-                if line.startswith("#begin document") or line.startswith("#end document"):
+                if line.startswith("#begin document"):
+                    continue
+                if line.startswith("#end document"):
+                    sentence.append("art_break")
                     continue
                 if not line.strip():
                     texts.append(sentence)

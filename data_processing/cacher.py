@@ -7,7 +7,7 @@ from typing import Dict, List, TypeVar, Union, Optional
 from config.config import CacheCfg
 from utils.util_types import TensorType
 
-Tensor = TypeVar("Tensor", torch.Tensor, np.ndarray)
+EncodedInstance = TypeVar("EncodedInstance")
 
 
 class Cacher:
@@ -22,7 +22,7 @@ class Cacher:
     def from_config(config: CacheCfg) -> "Cacher":
         return Cacher(config.path, config.tensor_type)
 
-    def create_cache(self, hash: str, encoded_instance: Dict[str, Union[Tensor, List[List[int]]]]) -> None:
+    def create_cache(self, hash: str, encoded_instance: Dict[str, EncodedInstance]) -> None:
         instance_dir_path = self.path / hash
         mkdir_if_not_exist(instance_dir_path)
         tensor_dir_path = instance_dir_path / str(self.tensor_type.value)
@@ -30,11 +30,11 @@ class Cacher:
         self.write_tensors(tensor_dir_path / "input_ids", encoded_instance["input_ids"])
         self.write_tensors(tensor_dir_path / "tensors", encoded_instance["tensors"])
         self.write_original_tokens_ids(
-            instance_dir_path / "original_tokens.txt", encoded_instance["original_tokens"]
+            instance_dir_path / "original_tokens.txt", encoded_instance["original_tokens"]  # type: ignore
         )
         self.cached_ids = set(el.name for el in self.path.iterdir() if el.is_dir())
 
-    def get_from_cache(self, hash: str) -> Optional[Dict[str, Union[Tensor, List[List[int]]]]]:
+    def get_from_cache(self, hash: str) -> Optional[Dict[str, EncodedInstance]]:
         if hash not in self.cached_ids:
             return None
         instance_dir_path = self.path / hash
@@ -42,16 +42,16 @@ class Cacher:
         return {
             "input_ids": self.load_tensor(tensor_dir_path / "input_ids"),
             "tensors": self.load_tensor(tensor_dir_path / "tensors"),
-            "original_tokens": self.load_original_tokens_ids(instance_dir_path / "original_tokens.txt"),
+            "original_tokens": self.load_original_tokens_ids(instance_dir_path / "original_tokens.txt"),  # type: ignore
         }
 
-    def write_tensors(self, path: Path, tensor: Tensor) -> None:
+    def write_tensors(self, path: Path, tensor: EncodedInstance) -> None:
         if self.tensor_type == TensorType.torch:
             torch.save(tensor, path.parent / (path.name + ".pt"))
         else:
             raise Exception("Not implemented for this type of tensor...")
 
-    def load_tensor(self, path) -> Union[Tensor, List[List[int]]]:
+    def load_tensor(self, path) -> EncodedInstance:
         if self.tensor_type == TensorType.torch:
             return torch.load(path.parent / (path.name + ".pt"))
         else:
