@@ -89,16 +89,13 @@ class ConllParser:
             if not cr.startswith("-"):
                 self.add_corref_mutable(correferences, cr, i_token)
 
-            # TODO
-            # Make it beautiful
+            # Extract all spans
 
             num_of_new_spans = len(span_types_to_parse.findall(span))
             num_of_spans += num_of_new_spans
             if num_of_spans > 0:
-                # span_keys = span.split("(")  # [1 : num_of_new_spans + 1]
                 tmp_spans += [
-                    ([], token.strip("*"))
-                    for _, token in zip(range(num_of_spans), span_key_pat.findall(span))
+                    ([], token) for _, token in zip(range(num_of_spans), span_key_pat.findall(span))
                 ]
                 for span_ids in tmp_spans:
                     span_ids[0].append(i_token)
@@ -109,6 +106,7 @@ class ConllParser:
                     spans.append(span_ids)
                 tmp_spans = tmp_spans[:-num_of_spans_to_dump]
 
+        # Group spans with respect to the span types
         sorted_spans = sorted(spans, key=lambda x: x[1])
         grouped_spans = {
             key: [s_idxs for s_idxs, _ in span_idxs_w_keys]
