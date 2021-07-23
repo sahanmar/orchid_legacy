@@ -14,11 +14,9 @@ class ConllParser:
 
         parsed_sentences: List[ConllSentence] = []
         sent_i = 0
-        for sentence in texts:
-            if sentence == "art_break":
-                sent_i = 0
-            parsed_sentences.append(self.process_sentence(sentence, sent_i))
-            sent_i += 1
+        for text in texts:
+            for sent_i, sentence in enumerate(text):
+                parsed_sentences.append(self.process_sentence(sentence, sent_i))
 
         return parsed_sentences
 
@@ -34,7 +32,10 @@ class ConllParser:
         return ConllParser(path)
 
     def add_corref_mutable(
-        self, corref_dict: Dict[int, List[TokenRange]], unprocessed_corref: str, i_token: int,
+        self,
+        corref_dict: Dict[int, List[TokenRange]],
+        unprocessed_corref: str,
+        i_token: int,
     ) -> None:
         for corref in unprocessed_corref.split("|"):
             cr_label, cr_type = self.parse_cr(corref)
@@ -83,20 +84,22 @@ class ConllParser:
         )
 
     @staticmethod
-    def split_file_2_texts(path: Path) -> List[List[str]]:
+    def split_file_2_texts(path: Path) -> List[List[List[str]]]:
 
-        texts: List[List[str]] = []
+        texts: List[List[List[str]]] = []
         sentence: List[str] = []
+        text: List[List[str]] = []
 
         with open(path, "r") as f:
             for line in f.readlines():
                 if line.startswith("#begin document"):
                     continue
                 if line.startswith("#end document"):
-                    sentence.append("art_break")
+                    texts.append(text)
+                    text = []
                     continue
                 if not line.strip():
-                    texts.append(sentence)
+                    text.append(sentence)
                     del sentence
                     sentence = []
                     continue

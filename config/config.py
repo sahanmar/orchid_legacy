@@ -25,6 +25,7 @@ class DataPaths:
 class ModelCfg:
     dev_mode: bool
     train: bool
+    params: Dict[str, int]
 
 
 @dataclass(frozen=True)

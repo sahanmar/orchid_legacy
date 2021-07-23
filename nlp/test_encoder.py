@@ -1,5 +1,7 @@
 import unittest
 
+import torch
+
 from nlp.encoder import GeneralisedBertEncoder
 from config.config import EncodingCfg
 from utils.util_types import EncodingType
@@ -15,9 +17,11 @@ class EncodingTest(unittest.TestCase):
 
         encoded = encoding_model(tokenized_text)
 
+        self.assertEqual(type(encoded["input_ids"]), torch.Tensor)
+
         # test if ids are correct
         self.assertEqual(
-            encoded["input_ids"].squeeze().tolist(),
+            encoded["input_ids"].squeeze().tolist(),  # type: ignore
             [
                 101,
                 1122,

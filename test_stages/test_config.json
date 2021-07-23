@@ -6,7 +6,12 @@
     },
     "model": {
         "dev_mode": true,
-        "train": false
+        "train": false,
+        "params": {
+            "embeds_dim": 1024,
+            "hidden_dim": 20,
+            "distance_dim": 20
+        }
     },
     "encoding": {
         "encoding_type": "SpanBERT_base_cased"

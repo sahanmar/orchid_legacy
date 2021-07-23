@@ -42,7 +42,7 @@ class MentionScore(nn.Module):
         """
         Compute unary mention score for each span
 
-        Input: BATCH x WORD_TOKENS x EMBED
+        Input: BATCH x WORD_TOKENS x EMBED,
         Output: Tuple[BATCH x DOCUMENT_SPANS x 3*EMBED, BATCH x DOCUMENT_SPANS x 1]
         """
 
