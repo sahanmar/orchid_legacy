@@ -1,8 +1,16 @@
-from pathlib import Path
-from typing import Tuple, Optional, List, Dict
-from utils.util_types import ConllSentence, TokenRange, Morphology, CorrefTokenType
+import re
 
+from pathlib import Path
+from typing import Tuple, List, Dict
+from itertools import groupby
+
+from utils.util_types import ConllSentence, TokenRange, Morphology, CorrefTokenType
 from config.config import Config
+
+
+span_types_to_parse = re.compile(r"\(")
+span_end = re.compile(r"\)")
+span_key_pat = re.compile(r"[a-zA-Z]+")
 
 
 class ConllParser:
@@ -52,15 +60,19 @@ class ConllParser:
 
         tokens: List[Morphology] = []
         correferences: Dict[int, List[TokenRange]] = {}
+        spans: List[Tuple[List[int], str]] = []
+
+        num_of_spans = 0
+        tmp_spans: List[Tuple[List[int], str]] = []
 
         for per_token_annotations in sentence:
             (
                 folder,
-                i_sent_str,
+                _,
                 i_token_str,
                 token,
                 pos,
-                _,
+                span,
                 lemma,
                 _,
                 _,
@@ -75,12 +87,37 @@ class ConllParser:
             if not cr.startswith("-"):
                 self.add_corref_mutable(correferences, cr, i_token)
 
+            # Extract all spans
+
+            num_of_new_spans = len(span_types_to_parse.findall(span))
+            num_of_spans += num_of_new_spans
+            if num_of_spans > 0:
+                tmp_spans += [
+                    ([], token) for _, token in zip(range(num_of_spans), span_key_pat.findall(span))
+                ]
+                for span_ids in tmp_spans:
+                    span_ids[0].append(i_token)
+            num_of_spans_to_dump = len(span_end.findall(span))
+            num_of_spans -= num_of_spans_to_dump
+            if num_of_spans_to_dump > 0:
+                for span_ids in tmp_spans[-num_of_spans_to_dump:]:
+                    spans.append(span_ids)
+                tmp_spans = tmp_spans[:-num_of_spans_to_dump]
+
+        # Group spans with respect to the span types
+        sorted_spans = sorted(spans, key=lambda x: x[1])
+        grouped_spans = {
+            key: [s_idxs for s_idxs, _ in span_idxs_w_keys]
+            for key, span_idxs_w_keys in groupby(sorted_spans, key=lambda x: x[1])
+        }
+
         return ConllSentence(
             folder=folder,
             sentence_index=int(sent_index),
             word_tokens=tokens,
             speaker=speaker,
             correferences=correferences,
+            spans=grouped_spans,
         )
 
     @staticmethod

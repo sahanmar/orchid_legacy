@@ -17,9 +17,9 @@ class TensorType(Enum):
 
 class CorrefTokenType(Enum):
     """
-    Correferences are labeled as spans. Thus, more than one 
-    consecutive words can be assigned to the same correference. 
-    We distinguish 
+    Correferences are labeled as spans. Thus, more than one
+    consecutive words can be assigned to the same correference.
+    We distinguish
     start <- the begging of the span
     end <- the end of the span
     full <- the correference is one token
@@ -58,6 +58,7 @@ class ConllSentence:
     word_tokens: List[Morphology]
     speaker: str
     correferences: Dict[int, List[TokenRange]]
+    spans: Dict[str, List[List[int]]]
 
 
 @dataclass
