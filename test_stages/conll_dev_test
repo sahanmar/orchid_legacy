@@ -53,3 +53,26 @@
 0000   0   23            .      .          *))      -    -   -   Speaker#1       *             *            *        *      -
 
 #end document
+#begin document
+0000   4   0          Hong   NNP  (TOP(S(NP*    -    -   -   Speaker#1   (GPE*   (ARG1*   (45
+0000   4   1          Kong   NNP           *)   -    -   -   Speaker#1       *)       *)   45)
+0000   4   2            is   VBZ        (VP*    be  01   1   Speaker#1       *      (V*)    -
+0000   4   3             a    DT        (NP*    -    -   -   Speaker#1       *   (ARG2*     -
+0000   4   4          busy    JJ           *    -    -   -   Speaker#1       *        *     -
+0000   4   5    metropolis    NN          *))   -    -   -   Speaker#1       *        *)    -
+0000   4   6             .     .          *))   -    -   -   Speaker#1       *        *     -
+
+0000   4    0       Even    RB   (TOP(S(PP(ADVP*)      -    -   -   Speaker#1   *    (ARGM-TMP*        *     -
+0000   4    1         at    IN                 *       -    -   -   Speaker#1   *             *        *     -
+0000   4    2       dusk    NN             (NP*))    dusk   -   -   Speaker#1   *             *)       *     -
+0000   4    3          ,     ,                 *       -    -   -   Speaker#1   *             *        *     -
+0000   4    4        the    DT           (NP(NP*       -    -   -   Speaker#1   *        (ARG1*   (ARG1*   (45
+0000   4    5       city    NN                 *       -    -   -   Speaker#1   *             *        *     -
+0000   4    6         's   POS                 *)      -    -   -   Speaker#1   *             *        *    45)
+0000   4    7      pulse    NN                 *)   pulse   -   -   Speaker#1   *             *)       *)    -
+0000   4    8      never    RB            (ADVP*)      -    -   -   Speaker#1   *    (ARGM-TMP*)       *     -
+0000   4    9      stops   VBZ              (VP*     stop  01   1   Speaker#1   *           (V*)       *     -
+0000   4   10    beating   VBG          (S(VP*)))    beat  02   2   Speaker#1   *        (ARG1*)     (V*)    -
+0000   4   11          .     .                *))      -    -   -   Speaker#1   *             *        *     -
+
+#end document

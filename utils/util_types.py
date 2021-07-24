@@ -54,7 +54,7 @@ class Morphology:
 @dataclass
 class ConllSentence:
     folder: str
-    sentence_index: int
+    document_index: int
     word_tokens: List[Morphology]
     speaker: str
     correferences: Dict[int, List[TokenRange]]

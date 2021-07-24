@@ -1,15 +1,19 @@
+from re import I
 from typing import List, Optional, Union, Dict
 
-from nlp.encoder import GeneralisedBertEncoder, Tensor, bpe_to_original_embeddings_many
+from nlp.encoder import (
+    GeneralisedBertEncoder,
+    bpe_to_original_embeddings_many,
+    to_doc_based_batches,
+    text_based_span_tokens_shift,
+)
 from data_processing.conll_parses import ConllParser
 from data_processing.cacher import Cacher
 from config.config import Config, ModelCfg
 
 from nlp.models.torch.e2ecr import E2ECR
 
-from utils.util_types import ConllSentence, PipelineOutput, Response
-
-from itertools import chain
+from utils.util_types import PipelineOutput, Response
 
 
 class OrchidPipeline:
@@ -42,26 +46,19 @@ class OrchidPipeline:
 
             # Encode
             sentences_texts = [[token.text for token in sent.word_tokens] for sent in sentences]
-            text_spans = text_based_span_tokens_shift(sentences)
+            doc_ids = [sent.document_index for sent in sentences]
+            text_spans = text_based_span_tokens_shift(sentences, doc_ids)
 
             encoded_tokens_per_sentences = self.encoder.encode_many(sentences_texts, cacher=self.cacher)
             orig_encoded_tokens_per_sentences = bpe_to_original_embeddings_many(encoded_tokens_per_sentences)
 
+            doc_based_batches = to_doc_based_batches(orig_encoded_tokens_per_sentences, doc_ids)
+
             # Model Initializing, Training, Inferencing
             model = E2ECR(**self.coref_config.params)
+            model_out = model(doc_based_batches, text_spans)
 
             return PipelineOutput(state=Response.success)
 
         except:  # must specify the error type
             return PipelineOutput(state=Response.fail)
-
-
-def text_based_span_tokens_shift(text: List[ConllSentence]) -> List[List[int]]:
-    sentence_lengths = [len(sent.word_tokens) for sent in text[:-1]]
-    sentence_lengths.insert(0, 0)
-    sentence_spans = [list(chain.from_iterable(sent.spans.values())) for sent in text]
-    return [
-        [val + shift for val in span]
-        for shift, spans in zip(sentence_lengths, sentence_spans)
-        for span in spans
-    ]

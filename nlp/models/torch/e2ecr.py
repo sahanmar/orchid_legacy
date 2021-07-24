@@ -1,8 +1,9 @@
+from re import L
 import torch
 import torch.nn as nn
 import torch.optim as optim
 
-from typing import Union
+from typing import List, Union
 
 from datetime import datetime
 from tqdm import tqdm
@@ -32,13 +33,13 @@ class Score(nn.Module):
 class MentionScore(nn.Module):
     """Mention scoring module"""
 
-    def __init__(self, gi_dim, attn_dim):
+    def __init__(self, gi_dim: int, attn_dim: int):
         super().__init__()
 
         self.attention = Score(attn_dim)
         self.score = Score(gi_dim)
 
-    def forward(self, batch_embeds, batch_spans_ids, K=250):
+    def forward(self, batch_embeds: torch.Tensor, batch_spans_ids: List[List[List[int]]], K=250):
         """
         Compute unary mention score for each span
 
@@ -62,7 +63,7 @@ class MentionScore(nn.Module):
                         batch_embeds[doc_id, span[0], :],  # First span token
                         batch_embeds[doc_id, span[-1], :],  # Last span token
                         torch.sum(
-                            torch.mul(batch_embeds[doc_id, span, :], attns[doc_id, span, :]), dim=1
+                            torch.mul(batch_embeds[doc_id, span, :], attns[doc_id, span, :]), dim=0
                         ),  # Attns through spans
                     ]
                 )
@@ -124,14 +125,14 @@ class PairwiseScore(nn.Module):
 
 
 class E2ECR(nn.Module):
-    def __init__(self, embeds_dim, hidden_dim, distance_dim=20, speaker_dim=20):
+    def __init__(self, embeds_dim: int, hidden_dim: int, distance_dim: int = 20, speaker_dim: int = 20):
         super().__init__()
 
         # Forward and backward pass over the document
-        attn_dim = hidden_dim * 2
+        attn_dim = embeds_dim
 
         # Forward and backward passes, avg'd attn over embeddings, span width
-        gi_dim = embeds_dim + distance_dim
+        gi_dim = 3 * embeds_dim  # + distance_dim
 
         # gi, gj, gi*gj, distance between gi and gj
         gij_dim = gi_dim * 3
@@ -139,13 +140,13 @@ class E2ECR(nn.Module):
         self.score_spans = MentionScore(gi_dim, attn_dim)
         self.score_pairs = PairwiseScore(gij_dim)
 
-    def forward(self, encoded_doc):
+    def forward(self, batch_encoded_docs: torch.Tensor, batch_spans_ids: List[List[List[int]]]):
         """
         Predict pairwise coreference scores
         """
 
         # Get mention scores for each span
-        g_i, mention_scores = self.score_spans(encoded_doc)
+        g_i, mention_scores = self.score_spans(batch_encoded_docs, batch_spans_ids)
 
         # Get pairwise scores for each span combo
         coref_scores = self.score_pairs(g_i, mention_scores)

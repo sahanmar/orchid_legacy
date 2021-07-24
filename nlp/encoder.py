@@ -4,14 +4,18 @@ import numpy as np
 import hashlib
 
 from typing import Dict, List, TypeVar, Union, Optional
+from itertools import groupby, chain
 from transformers import AutoTokenizer, AutoModel  # type: ignore
 
 from config.config import EncodingCfg
 from data_processing.cacher import Cacher
 from utils.util_types import EncodingType, TensorType
 from utils.utils import out_of_menu_exit
+from utils.util_types import ConllSentence
 
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
+
+INCONSISTENCY_TOKENS = {"'"}
 
 ENCODER_MAPPER = {
     EncodingType.SpanBERT_base_cased.value: "SpanBERT/spanbert-base-cased",
@@ -100,7 +104,11 @@ class GeneralisedBertEncoder:
         tokens: List[List[int]] = [[0]]
         token_to_extend = 0
         for i, pbe_token in enumerate(pbe_tokens[1:], start=1):
-            if pbe_token.startswith("##"):
+            # TODO FIX INCONSISTENCIES
+            # Pay attention to inconsistency tokens. There are still inconsistencies
+            # but they are minore and do not influence the final result.
+            # E.g. original_tokens = [city, 's] -> bpe_to_original = [city', s]
+            if pbe_token.startswith("##") or pbe_token in INCONSISTENCY_TOKENS:
                 tokens[token_to_extend].append(i)
                 continue
             token_to_extend += 1
@@ -130,7 +138,7 @@ def bpe_to_original_embeddings(
 
 def bpe_to_original_embeddings_many(
     encoded_tokens_per_sentences: List[Dict[str, Union[torch.Tensor, np.ndarray, List[List[int]]]]]
-) -> Union[torch.Tensor, np.ndarray, List[List[int]]]:
+) -> List[torch.Tensor]:
 
     # TODO ADD TENSORFLOW IMPLEMENTATION
     # TODO ADD NUMPY IMPLEMENTATION
@@ -155,11 +163,35 @@ def bpe_to_original_embeddings_many(
 
         assert len(orig_token_embeds) == len(list_bpe_indices)
 
-        lengths = [len(i) for i in list_bpe_indices]
-
-        return torch_custom_padding(orig_token_embeds, lengths)
+        return orig_token_embeds
 
     raise TypeError("Smth is wrong with types...")
+
+
+def to_doc_based_batches(tensors_2_batch: List[torch.Tensor], doc_id_array: List[int]) -> torch.Tensor:
+    doc_id_w_sent_id = [(doc_i, sent_i) for sent_i, doc_i in enumerate(doc_id_array)]
+    sliced_sent_ids = [list(group[1]) for group in groupby(doc_id_w_sent_id, key=lambda x: x[0])]
+
+    doc_tensors = [
+        torch_custom_flatten(
+            [tensors_2_batch[sent_id] for _, sent_id in sent_ids],
+            [tensors_2_batch[sent_id].size()[1] for _, sent_id in sent_ids],
+        )
+        for sent_ids in sliced_sent_ids
+    ]
+    lengths = [t.size()[1] for t in doc_tensors]
+    return torch_custom_padding(doc_tensors, lengths)
+
+
+def torch_custom_flatten(tensors_2_flatten: List[torch.Tensor], lengths: List[int]) -> torch.Tensor:
+    _, _, embed_size = tensors_2_flatten[0].size()
+    flatten_tensor = torch.zeros(1, sum(lengths), embed_size)
+    shift = 0
+    for length, tensor in zip(lengths, tensors_2_flatten):
+        flatten_tensor[0, shift : shift + length, :] = tensor[0, :, :]
+        shift += length
+
+    return flatten_tensor
 
 
 def torch_custom_padding(tensors_2_pad: List[torch.Tensor], lengths: List[int]) -> torch.Tensor:
@@ -178,3 +210,22 @@ def torch_custom_padding(tensors_2_pad: List[torch.Tensor], lengths: List[int]) 
 
 def naive_sha1_hash(index: int, text: List[str]) -> str:
     return hashlib.sha1("".join([str(index), *text]).encode()).hexdigest()
+
+
+def text_based_span_tokens_shift(text: List[ConllSentence], doc_ids: List[int]) -> List[List[List[int]]]:
+    text_spans = []
+    doc_id_w_sent_id = [(doc_i, sent_i) for sent_i, doc_i in enumerate(doc_ids)]
+    sliced_sent_ids = [list(group[1]) for group in groupby(doc_id_w_sent_id, key=lambda x: x[0])]
+    doc = [[text[sent_id] for _, sent_id in sent_ids] for sent_ids in sliced_sent_ids]
+    for doc_sents in doc:
+        sentence_lengths = [len(sent.word_tokens) for sent in doc_sents[:-1]]
+        sentence_lengths.insert(0, 0)
+        sentence_spans = [list(chain.from_iterable(sent.spans.values())) for sent in doc_sents]
+        text_spans.append(
+            [
+                [val + shift for val in span]
+                for shift, spans in zip(sentence_lengths, sentence_spans)
+                for span in spans
+            ]
+        )
+    return text_spans

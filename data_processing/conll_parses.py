@@ -21,10 +21,10 @@ class ConllParser:
         texts = self.split_file_2_texts(self.path)
 
         parsed_sentences: List[ConllSentence] = []
-        sent_i = 0
-        for text in texts:
-            for sent_i, sentence in enumerate(text):
-                parsed_sentences.append(self.process_sentence(sentence, sent_i))
+        doc_i = 0
+        for doc_i, text in enumerate(texts):
+            for sentence in text:
+                parsed_sentences.append(self.process_sentence(sentence, doc_i))
 
         return parsed_sentences
 
@@ -56,7 +56,7 @@ class ConllParser:
             else:
                 corref_dict[cr_label][-1].end = i_token + 1
 
-    def process_sentence(self, sentence: List[str], sent_index) -> ConllSentence:
+    def process_sentence(self, sentence: List[str], document_index: int) -> ConllSentence:
 
         tokens: List[Morphology] = []
         correferences: Dict[int, List[TokenRange]] = {}
@@ -113,7 +113,7 @@ class ConllParser:
 
         return ConllSentence(
             folder=folder,
-            sentence_index=int(sent_index),
+            document_index=document_index,
             word_tokens=tokens,
             speaker=speaker,
             correferences=correferences,
