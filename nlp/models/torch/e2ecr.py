@@ -3,7 +3,8 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 
-from typing import List, Union
+from typing import List, Union, Dict
+from utils.util_types import TokenRange
 
 from datetime import datetime
 from tqdm import tqdm
@@ -39,7 +40,7 @@ class MentionScore(nn.Module):
         self.attention = Score(attn_dim)
         self.score = Score(gi_dim)
 
-    def forward(self, batch_embeds: torch.Tensor, batch_spans_ids: List[List[List[int]]], K=250):
+    def forward(self, batch_embeds: torch.Tensor, batch_spans_ids: List[List[TokenRange]], K=250):
         """
         Compute unary mention score for each span
 
@@ -60,10 +61,14 @@ class MentionScore(nn.Module):
             for doc_span_id, span in enumerate(document_span_ids):
                 batch_document_span_embeds[doc_id, doc_span_id, :] = torch.cat(
                     [
-                        batch_embeds[doc_id, span[0], :],  # First span token
-                        batch_embeds[doc_id, span[-1], :],  # Last span token
+                        batch_embeds[doc_id, span.start, :],  # First span token
+                        batch_embeds[doc_id, span.end, :],  # Last span token
                         torch.sum(
-                            torch.mul(batch_embeds[doc_id, span, :], attns[doc_id, span, :]), dim=0
+                            torch.mul(
+                                batch_embeds[doc_id, span.to_consecutive_list(), :],
+                                attns[doc_id, span.to_consecutive_list(), :],
+                            ),
+                            dim=0,
                         ),  # Attns through spans
                     ]
                 )
@@ -140,7 +145,7 @@ class E2ECR(nn.Module):
         self.score_spans = MentionScore(gi_dim, attn_dim)
         self.score_pairs = PairwiseScore(gij_dim)
 
-    def forward(self, batch_encoded_docs: torch.Tensor, batch_spans_ids: List[List[List[int]]]):
+    def forward(self, batch_encoded_docs: torch.Tensor, batch_spans_ids: List[List[TokenRange]]):
         """
         Predict pairwise coreference scores
         """
@@ -246,3 +251,26 @@ class Trainer:
 
 def to_cuda(model: Union[nn.Module, torch.Tensor]):
     return model.to(torch.device("cuda"))
+
+
+def create_target_values(
+    texts_spans: List[List[TokenRange]], text_correfs: List[Dict[int, List[TokenRange]]]
+) -> torch.Tensor:
+    batch_size = len(texts_spans)
+    max_spans_num = max((len(spans) for spans in texts_spans))
+    targer_values = torch.zeros((batch_size, max_spans_num, max_spans_num, 1))
+    for k, spans in enumerate(texts_spans):
+        for i, span_i in enumerate(spans):
+            intersection_labels = [
+                label
+                for label, correfs in text_correfs[k].items()
+                for corref in correfs
+                if corref.inside(span_i)
+            ]
+            if intersection_labels:
+                for intersection_label in intersection_labels:
+                    for j, span_j in enumerate(spans):
+                        if any([corref.inside(span_j) for corref in text_correfs[k][intersection_label]]):
+                            targer_values[k, i, j, :] = 1
+
+    return targer_values

@@ -2,7 +2,7 @@ import json
 import sys
 
 from dataclasses import dataclass
-from typing import Dict, cast, TypeVar, Any
+from typing import Dict, List, cast, Set, Any
 from pathlib import Path
 
 from utils.util_types import EncodingType, TensorType, Optional
@@ -53,11 +53,21 @@ class CacheCfg:
 
 
 @dataclass(frozen=True)
+class TextCfg:
+    correference_tags: Set[str]
+
+    @staticmethod
+    def load_config(cfg: Dict[str, List[str]]):
+        return TextCfg(set(cfg.get("correference_tags", set())))
+
+
+@dataclass(frozen=True)
 class Config:
     data_path: DataPaths
     model: ModelCfg
     encoding: EncodingCfg
     cache: Optional[CacheCfg]
+    text: TextCfg
 
     @staticmethod
     def load_config(config_path: Path) -> "Config":
@@ -74,6 +84,7 @@ class Config:
                     "model": ModelCfg(**cfg["model"]),
                     "encoding": EncodingCfg.load_config(cfg["encoding"]),
                     "cache": CacheCfg.load_config(cfg["cache"]),
+                    "text": TextCfg.load_config(cfg["text"]),
                 },
             )
         )

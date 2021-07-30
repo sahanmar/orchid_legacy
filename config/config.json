@@ -13,6 +13,12 @@
             "distance_dim": 20
         }
     },
+    "text": {
+        "correference_tags": [
+            "NML",
+            "NP"
+        ]
+    },
     "encoding": {
         "encoding_type": "SpanBERT_base_cased"
     },

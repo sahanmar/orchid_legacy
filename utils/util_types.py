@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from enum import Enum
 
-from typing import Optional, Callable, Dict, List
+from typing import Optional, Callable, Dict, List, Union
 
 
 class EncodingType(Enum):
@@ -38,10 +38,26 @@ class Response(Enum):
 class TokenRange:
     def __init__(self, start: int, end: int):
         self.start = start
-        self.end = end
+        self.end = end  # including this token
 
     def __repr__(self):
         return f"({self.start},{self.end})"
+
+    def __add__(self, shift: int) -> "TokenRange":
+        return TokenRange(self.start + shift, self.end + shift)
+
+    def to_consecutive_list(self):
+        return list(range(self.start, self.end + 1))
+
+    def inside(self, token_range: "TokenRange") -> bool:
+        return self.start <= token_range.start and self.end >= token_range.end
+
+    # def __eq__(self, token_range: "TokenRange") -> bool:
+    #     return if start
+
+    @staticmethod
+    def from_list(list_of_consecutive_elements: List[int]) -> "TokenRange":
+        return TokenRange(list_of_consecutive_elements[0], list_of_consecutive_elements[-1])
 
 
 @dataclass
@@ -58,7 +74,7 @@ class ConllSentence:
     word_tokens: List[Morphology]
     speaker: str
     correferences: Dict[int, List[TokenRange]]
-    spans: Dict[str, List[List[int]]]
+    spans: Dict[str, List[TokenRange]]
 
 
 @dataclass

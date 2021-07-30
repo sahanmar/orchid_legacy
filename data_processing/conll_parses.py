@@ -1,7 +1,7 @@
 import re
 
 from pathlib import Path
-from typing import Tuple, List, Dict
+from typing import Optional, Set, Tuple, List, Dict
 from itertools import groupby
 
 from utils.util_types import ConllSentence, TokenRange, Morphology, CorrefTokenType
@@ -14,8 +14,9 @@ span_key_pat = re.compile(r"[a-zA-Z]+")
 
 
 class ConllParser:
-    def __init__(self, path: Path):
+    def __init__(self, path: Path, coref_to_leave: Optional[Set[str]]):
         self.path = path
+        self.coref_to_leave = coref_to_leave if coref_to_leave else set()
 
     def __call__(self) -> List[ConllSentence]:
         texts = self.split_file_2_texts(self.path)
@@ -37,7 +38,8 @@ class ConllParser:
             if config.model.train
             else config.data_path.test
         )
-        return ConllParser(path)
+        coref_to_leave = config.text.correference_tags
+        return ConllParser(path, coref_to_leave)
 
     def add_corref_mutable(
         self,
@@ -107,8 +109,9 @@ class ConllParser:
         # Group spans with respect to the span types
         sorted_spans = sorted(spans, key=lambda x: x[1])
         grouped_spans = {
-            key: [s_idxs for s_idxs, _ in span_idxs_w_keys]
+            key: [TokenRange.from_list(s_idxs) for s_idxs, _ in span_idxs_w_keys]
             for key, span_idxs_w_keys in groupby(sorted_spans, key=lambda x: x[1])
+            if key in self.coref_to_leave or not self.coref_to_leave
         }
 
         return ConllSentence(

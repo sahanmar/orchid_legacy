@@ -5,13 +5,13 @@ from nlp.encoder import (
     GeneralisedBertEncoder,
     bpe_to_original_embeddings_many,
     to_doc_based_batches,
-    text_based_span_tokens_shift,
+    text_based_span_and_corref_tokens_shift,
 )
 from data_processing.conll_parses import ConllParser
 from data_processing.cacher import Cacher
 from config.config import Config, ModelCfg
 
-from nlp.models.torch.e2ecr import E2ECR
+from nlp.models.torch.e2ecr import E2ECR, create_target_values
 
 from utils.util_types import PipelineOutput, Response
 
@@ -47,7 +47,7 @@ class OrchidPipeline:
             # Encode
             sentences_texts = [[token.text for token in sent.word_tokens] for sent in sentences]
             doc_ids = [sent.document_index for sent in sentences]
-            text_spans = text_based_span_tokens_shift(sentences, doc_ids)
+            text_spans, grouped_shift_correfs = text_based_span_and_corref_tokens_shift(sentences, doc_ids)
 
             encoded_tokens_per_sentences = self.encoder.encode_many(sentences_texts, cacher=self.cacher)
             orig_encoded_tokens_per_sentences = bpe_to_original_embeddings_many(encoded_tokens_per_sentences)
@@ -56,6 +56,10 @@ class OrchidPipeline:
 
             # Model Initializing, Training, Inferencing
             model = E2ECR(**self.coref_config.params)
+            if self.coref_config.train:
+
+                # TODO ADD TESTS!
+                target_values = create_target_values(text_spans, grouped_shift_correfs)
             model_out = model(doc_based_batches, text_spans)
 
             return PipelineOutput(state=Response.success)

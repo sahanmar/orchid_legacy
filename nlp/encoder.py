@@ -1,15 +1,15 @@
-import sys
 import torch
 import numpy as np
 import hashlib
 
-from typing import Dict, List, TypeVar, Union, Optional
+from typing import Dict, List, TypeVar, Union, Optional, Tuple
 from itertools import groupby, chain
 from transformers import AutoTokenizer, AutoModel  # type: ignore
+from tqdm import tqdm
 
 from config.config import EncodingCfg
 from data_processing.cacher import Cacher
-from utils.util_types import EncodingType, TensorType
+from utils.util_types import EncodingType, TensorType, TokenRange
 from utils.utils import out_of_menu_exit
 from utils.util_types import ConllSentence
 
@@ -57,15 +57,15 @@ class GeneralisedBertEncoder:
         This method works with tokenized text. This is done based on OntoNotes input.
         The method returns a dict with encoded ids and tensors.
         """
+        with torch.no_grad():
+            if tensors_type.value not in TENSOR_MAPPER:
+                out_of_menu_exit(text="tensor type")
 
-        if tensors_type.value not in TENSOR_MAPPER:
-            out_of_menu_exit(text="tensor type")
-
-        pbe_tokens = self.tokenizer.tokenize(tokens, is_split_into_words=True)
-        tokenized = self.tokenizer(
-            tokens, return_tensors=TENSOR_MAPPER[tensors_type.value], is_split_into_words=True
-        )
-        tensors = self.model(**tokenized)
+            pbe_tokens = self.tokenizer.tokenize(tokens, is_split_into_words=True)
+            tokenized = self.tokenizer(
+                tokens, return_tensors=TENSOR_MAPPER[tensors_type.value], is_split_into_words=True
+            )
+            tensors = self.model(**tokenized)
 
         return {
             "input_ids": tokenized["input_ids"],
@@ -81,8 +81,8 @@ class GeneralisedBertEncoder:
     ) -> List[Dict[str, Union[torch.Tensor, np.ndarray, List[List[int]]]]]:
         encoded_sentences: List[Dict[str, Union[torch.Tensor, np.ndarray, List[List[int]]]]] = []
         if cacher is None:
-            return [self(sentence, tensors_type) for sentence in tokenized_sentences]
-        for i, sentence in enumerate(tokenized_sentences):
+            return [self(sentence, tensors_type) for sentence in tqdm(tokenized_sentences)]
+        for i, sentence in tqdm(enumerate(tokenized_sentences)):
             hashed_text = naive_sha1_hash(i, sentence)
             encoded_sent = cacher.get_from_cache(hashed_text)  # type: ignore
             if encoded_sent is None:
@@ -212,20 +212,38 @@ def naive_sha1_hash(index: int, text: List[str]) -> str:
     return hashlib.sha1("".join([str(index), *text]).encode()).hexdigest()
 
 
-def text_based_span_tokens_shift(text: List[ConllSentence], doc_ids: List[int]) -> List[List[List[int]]]:
+def text_based_span_and_corref_tokens_shift(
+    text: List[ConllSentence], doc_ids: List[int]
+) -> Tuple[List[List[TokenRange]], List[Dict[int, List[TokenRange]]]]:
     text_spans = []
+    shift_correfs = []
     doc_id_w_sent_id = [(doc_i, sent_i) for sent_i, doc_i in enumerate(doc_ids)]
     sliced_sent_ids = [list(group[1]) for group in groupby(doc_id_w_sent_id, key=lambda x: x[0])]
     doc = [[text[sent_id] for _, sent_id in sent_ids] for sent_ids in sliced_sent_ids]
     for doc_sents in doc:
-        sentence_lengths = [len(sent.word_tokens) for sent in doc_sents[:-1]]
+        sentence_lengths = list(np.cumsum([len(sent.word_tokens) for sent in doc_sents[:-1]]))
         sentence_lengths.insert(0, 0)
         sentence_spans = [list(chain.from_iterable(sent.spans.values())) for sent in doc_sents]
+        sentence_correfs = [
+            [(corref, label) for label, correfs in sent.correferences.items() for corref in correfs]
+            for sent in doc_sents
+        ]
         text_spans.append(
+            [span + shift for shift, spans in zip(sentence_lengths, sentence_spans) for span in spans]
+        )
+        shift_correfs.append(
             [
-                [val + shift for val in span]
-                for shift, spans in zip(sentence_lengths, sentence_spans)
-                for span in spans
+                (corref + shift, label)
+                for shift, correfs in zip(sentence_lengths, sentence_correfs)
+                for corref, label in correfs
             ]
         )
-    return text_spans
+
+    grouped_shift_correfs = [
+        {
+            label: [tr for tr, _ in values]
+            for label, values in groupby(sorted(correfs, key=lambda x: x[1]), key=lambda x: x[1])
+        }
+        for correfs in shift_correfs
+    ]
+    return text_spans, grouped_shift_correfs

@@ -22,6 +22,7 @@ class PipelineTest(unittest.TestCase):
             model=config.model,
             encoding=config.encoding,
             cache=config.cache,
+            text=config.text,
         )
         pipeline = OrchidPipeline.from_config(fail_config)
         pipeline_output = pipeline()

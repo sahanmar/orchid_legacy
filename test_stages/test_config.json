@@ -1,17 +1,23 @@
 {
     "data": {
-        "train": "",
+        "train": "test_stages/conll_dev_test",
         "test": "",
-        "dev": "test_stages/conll_dev_test"
+        "dev": ""
     },
     "model": {
-        "dev_mode": true,
-        "train": false,
+        "dev_mode": false,
+        "train": true,
         "params": {
             "embeds_dim": 768,
             "hidden_dim": 20,
             "distance_dim": 20
         }
+    },
+    "text": {
+        "correference_tags": [
+            "NML",
+            "NP"
+        ]
     },
     "encoding": {
         "encoding_type": "SpanBERT_base_cased"
