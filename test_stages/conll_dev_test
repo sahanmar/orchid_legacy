@@ -540,3 +540,278 @@ bc/cctv/00/cctv_0000   0   27         market    NN            *))   market   -  
 bc/cctv/00/cctv_0000   0   28              .     .            *))       -    -   -   Speaker#1        *        *             *            *      -
 
 #end document
+#begin document (wb/eng/00/eng_0010); part 007
+wb/eng/00/eng_0010   7    0           The    DT  (TOP(S(NP(NP*            -    -   -    _Shrubageddon_  *   (ARG1*   -
+wb/eng/00/eng_0010   7    1       concept    NN              *)           -    -   -    _Shrubageddon_  *        *   -
+wb/eng/00/eng_0010   7    2            of    IN           (PP*            -    -   -    _Shrubageddon_  *        *   -
+wb/eng/00/eng_0010   7    3           God   NNP        (NP(NP*)           -    -   -    _Shrubageddon_  *        *   -
+wb/eng/00/eng_0010   7    4          made   VBN           (VP*          made   -   -    _Shrubageddon_  *        *   -
+wb/eng/00/eng_0010   7    5            in    IN           (PP*            -    -   -    _Shrubageddon_  *        *   -
+wb/eng/00/eng_0010   7    6           man    NN        (NP(NP*           man   -   -    _Shrubageddon_  *        *   -
+wb/eng/00/eng_0010   7    7            's   POS              *)           -    -   -    _Shrubageddon_  *        *   -
+wb/eng/00/eng_0010   7    8         image    NN         *))))))        image   -   -    _Shrubageddon_  *        *)  -
+wb/eng/00/eng_0010   7    9            is   VBZ           (VP*            be  01   1    _Shrubageddon_  *      (V*)  -
+wb/eng/00/eng_0010   7   10             a    DT        (NP(NP*            -    -   -    _Shrubageddon_  *   (ARG2*   -
+wb/eng/00/eng_0010   7   11    conspiracy    NN              *)   conspiracy   -   1    _Shrubageddon_  *        *   -
+wb/eng/00/eng_0010   7   12             ,     ,              *            -    -   -    _Shrubageddon_  *        *   -
+wb/eng/00/eng_0010   7   13         plain    JJ         (ADJP*            -    -   -    _Shrubageddon_  *        *   -
+wb/eng/00/eng_0010   7   14           and    CC              *            -    -   -    _Shrubageddon_  *        *   -
+wb/eng/00/eng_0010   7   15        simple    JJ            *)))           -    -   -    _Shrubageddon_  *        *)  -
+wb/eng/00/eng_0010   7   16             .     .             *))           -    -   -    _Shrubageddon_  *        *   -
+
+wb/eng/00/eng_0010   7   0           A     DT  (TOP(NP(NP*         -    -   -    _Shrubageddon_  *         *        *   -
+wb/eng/00/eng_0010   7   1        time     NN       (ADJP*       time   -   -    _Shrubageddon_  *    (ARG0*)       *   -
+wb/eng/00/eng_0010   7   2          -    HYPH            *         -    -   -    _Shrubageddon_  *         *        *   -
+wb/eng/00/eng_0010   7   3     honored    VBN            *)     honor  01   -    _Shrubageddon_  *       (V*)       *   -
+wb/eng/00/eng_0010   7   4    strategy     NN            *)        -    -   -    _Shrubageddon_  *    (ARG1*)       *   -
+wb/eng/00/eng_0010   7   5          to     TO       (S(VP*         -    -   -    _Shrubageddon_  *         *        *   -
+wb/eng/00/eng_0010   7   6     control     VB         (VP*    control  01   1    _Shrubageddon_  *         *      (V*)  -
+wb/eng/00/eng_0010   7   7         the     DT         (NP*         -    -   -    _Shrubageddon_  *         *   (ARG1*   -
+wb/eng/00/eng_0010   7   8      masses    NNS         *))))      mass   -   -    _Shrubageddon_  *         *        *)  -
+wb/eng/00/eng_0010   7   9           .      .           *))        -    -   -    _Shrubageddon_  *         *        *   -
+
+wb/eng/00/eng_0010   7    0      David   NNP  (TOP(S(NP*        -    -   -    _Shrubageddon_  (PERSON*        (ARG1*   (23
+wb/eng/00/eng_0010   7    1     Koresh   NNP           *)       -    -   -    _Shrubageddon_         *)            *)   23)
+wb/eng/00/eng_0010   7    2        may    MD        (VP*        -    -   -    _Shrubageddon_         *    (ARGM-MOD*)    -
+wb/eng/00/eng_0010   7    3       very    RB      (ADVP*        -    -   -    _Shrubageddon_         *    (ARGM-ADV*     -
+wb/eng/00/eng_0010   7    4       well    RB           *)       -    -   -    _Shrubageddon_         *             *)    -
+wb/eng/00/eng_0010   7    5         be    VB        (VP*        be  01   1    _Shrubageddon_         *           (V*)    -
+wb/eng/00/eng_0010   7    6        the    DT        (NP*        -    -   -    _Shrubageddon_         *        (ARG2*     -
+wb/eng/00/eng_0010   7    7       next    JJ           *        -    -   -    _Shrubageddon_         *             *     -
+wb/eng/00/eng_0010   7    8     Christ   NNP           *        -    -   -    _Shrubageddon_   (PERSON)            *     -
+wb/eng/00/eng_0010   7    9     figure    NN           *)   figure   -   -    _Shrubageddon_         *             *)    -
+wb/eng/00/eng_0010   7   10    several    JJ  (PP(NP(QP*        -    -   -    _Shrubageddon_    (DATE*    (ARGM-TMP*     -
+wb/eng/00/eng_0010   7   11    hundred    CD           *)       -    -   -    _Shrubageddon_         *             *     -
+wb/eng/00/eng_0010   7   12      years   NNS           *)       -    -   -    _Shrubageddon_         *             *     -
+wb/eng/00/eng_0010   7   13       from    IN           *        -    -   -    _Shrubageddon_         *             *     -
+wb/eng/00/eng_0010   7   14        now    RB   (ADVP*))))       -    -   -    _Shrubageddon_         *)            *)    -
+wb/eng/00/eng_0010   7   15          ,     ,          *))       -    -   -    _Shrubageddon_         *             *     -
+
+wb/eng/00/eng_0010   7    0          and     CC      (TOP(S*        -    -   -    _Shrubageddon_  *             *    (ARGM-DIS*)           *         *      -
+wb/eng/00/eng_0010   7    1           if     IN       (SBAR*        -    -   -    _Shrubageddon_  *             *    (ARGM-ADV*            *         *      -
+wb/eng/00/eng_0010   7    2           we    PRP       (S(NP*)       -    -   -    _Shrubageddon_  *        (ARG1*)            *            *         *      -
+wb/eng/00/eng_0010   7    3        could     MD         (VP*        -    -   -    _Shrubageddon_  *    (ARGM-MOD*)            *            *         *      -
+wb/eng/00/eng_0010   7    4           be     VB         (VP*        be  01   4    _Shrubageddon_  *           (V*)            *            *         *      -
+wb/eng/00/eng_0010   7    5        there     RB       (ADVP*)       -    -   -    _Shrubageddon_  *        (ARG2*)            *            *         *      -
+wb/eng/00/eng_0010   7    6         then     RB   (ADVP*)))))       -    -   -    _Shrubageddon_  *    (ARGM-TMP*)            *)           *         *      -
+wb/eng/00/eng_0010   7    7            ,      ,            *        -    -   -    _Shrubageddon_  *             *             *            *         *      -
+wb/eng/00/eng_0010   7    8           we    PRP         (NP*)       -    -   -    _Shrubageddon_  *             *        (ARG0*)           *         *      -
+wb/eng/00/eng_0010   7    9        would     MD         (VP*        -    -   -    _Shrubageddon_  *             *    (ARGM-MOD*)           *         *      -
+wb/eng/00/eng_0010   7   10         tell     VB         (VP*      tell  01   1    _Shrubageddon_  *             *           (V*)           *         *      -
+wb/eng/00/eng_0010   7   11          the     DT      (NP(NP*        -    -   -    _Shrubageddon_  *             *        (ARG2*       (ARG1*         *    (37
+wb/eng/00/eng_0010   7   12    orthodoxy     NN            *)       -    -   -    _Shrubageddon_  *             *             *            *)        *      -
+wb/eng/00/eng_0010   7   13      created    VBN         (VP*    create  01   1    _Shrubageddon_  *             *             *          (V*)        *      -
+wb/eng/00/eng_0010   7   14       around     IN         (PP*        -    -   -    _Shrubageddon_  *             *             *   (ARGM-LOC*         *      -
+wb/eng/00/eng_0010   7   15          his   PRP$         (NP*        -    -   -    _Shrubageddon_  *             *             *            *         *    (23)
+wb/eng/00/eng_0010   7   16       legend     NN         *))))       -    -   -    _Shrubageddon_  *             *             *)           *)        *     37)
+wb/eng/00/eng_0010   7   17         that     IN       (SBAR*        -    -   -    _Shrubageddon_  *             *        (ARG1*            *         *      -
+wb/eng/00/eng_0010   7   18         they    PRP       (S(NP*)       -    -   -    _Shrubageddon_  *             *             *            *    (ARG1*)   (37)
+wb/eng/00/eng_0010   7   19          are    VBP         (VP*        be  01   1    _Shrubageddon_  *             *             *            *       (V*)     -
+wb/eng/00/eng_0010   7   20       insane     JJ         (NP*        -    -   -    _Shrubageddon_  *             *             *            *    (ARG2*      -
+wb/eng/00/eng_0010   7   21        fools    NNS       *))))))     fool   -   -    _Shrubageddon_  *             *             *)           *         *)     -
+wb/eng/00/eng_0010   7   22       ......      .           *))       -    -   -    _Shrubageddon_  *             *             *            *         *      -
+
+wb/eng/00/eng_0010   7   0         and    CC  (TOP(S*       -    -   -    _Shrubageddon_  *    (ARGM-DIS*)  -
+wb/eng/00/eng_0010   7   1          we   PRP     (NP*)      -    -   -    _Shrubageddon_  *        (ARG1*)  -
+wb/eng/00/eng_0010   7   2       would    MD     (VP*       -    -   -    _Shrubageddon_  *    (ARGM-MOD*)  -
+wb/eng/00/eng_0010   7   3    promptly    RB   (ADVP*)      -    -   -    _Shrubageddon_  *    (ARGM-MNR*)  -
+wb/eng/00/eng_0010   7   4          be    VB     (VP*       be   -   -    _Shrubageddon_  *             *   -
+wb/eng/00/eng_0010   7   5      burned   VBN     (VP*     burn  01   1    _Shrubageddon_  *           (V*)  -
+wb/eng/00/eng_0010   7   6          at    IN     (PP*       -    -   -    _Shrubageddon_  *    (ARGM-LOC*   -
+wb/eng/00/eng_0010   7   7         the    DT     (NP*       -    -   -    _Shrubageddon_  *             *   -
+wb/eng/00/eng_0010   7   8       stake    NN    *)))))   stake   -   -    _Shrubageddon_  *             *)  -
+wb/eng/00/eng_0010   7   9           .     .       *))      -    -   -    _Shrubageddon_  *             *   -
+
+wb/eng/00/eng_0010   7    0               Now    UH   (TOP(S(INTJ*)        -    -   -    _Shrubageddon_  *    (ARGM-DIS*)     *             *       -
+wb/eng/00/eng_0010   7    1                 ,     ,              *         -    -   -    _Shrubageddon_  *             *      *             *       -
+wb/eng/00/eng_0010   7    2                as    IN           (PP*         -    -   -    _Shrubageddon_  *    (ARGM-ADV*      *             *       -
+wb/eng/00/eng_0010   7    3               for    IN           (PP*         -    -   -    _Shrubageddon_  *             *      *             *       -
+wb/eng/00/eng_0010   7    4               the    DT        (NP(NP*         -    -   -    _Shrubageddon_  *             *      *             *    (157
+wb/eng/00/eng_0010   7    5            psalms   NNS              *)        -    -   -    _Shrubageddon_  *             *      *             *       -
+wb/eng/00/eng_0010   7    6                 ,     ,              *         -    -   -    _Shrubageddon_  *             *      *             *       -
+wb/eng/00/eng_0010   7    7               and    CC              *         -    -   -    _Shrubageddon_  *             *      *             *       -
+wb/eng/00/eng_0010   7    8             other    JJ           (NP*         -    -   -    _Shrubageddon_  *             *      *             *       -
+wb/eng/00/eng_0010   7    9      enlightening    JJ              *         -    -   -    _Shrubageddon_  *             *      *             *       -
+wb/eng/00/eng_0010   7   10         anecdotes   NNS           *))))        -    -   -    _Shrubageddon_  *             *)     *             *     157)
+wb/eng/00/eng_0010   7   11                 ,     ,              *         -    -   -    _Shrubageddon_  *             *      *             *       -
+wb/eng/00/eng_0010   7   12                 I   PRP           (NP*)        -    -   -    _Shrubageddon_  *        (ARG0*)     *             *    (139)
+wb/eng/00/eng_0010   7   13               dig   VBP           (VP*        dig  01   7    _Shrubageddon_  *           (V*)     *             *       -
+wb/eng/00/eng_0010   7   14              them   PRP           (NP*)        -    -   -    _Shrubageddon_  *        (ARG1*)     *             *    (157)
+wb/eng/00/eng_0010   7   15                 ,     ,              *         -    -   -    _Shrubageddon_  *             *      *             *       -
+wb/eng/00/eng_0010   7   16              baby    NN           (NP*)      baby   -   -    _Shrubageddon_  *    (ARGM-DIS*)     *             *       -
+wb/eng/00/eng_0010   7   17                 ,     ,              *         -    -   -    _Shrubageddon_  *             *      *             *       -
+wb/eng/00/eng_0010   7   18    wholeheartedly    RB         (ADVP*)        -    -   -    _Shrubageddon_  *    (ARGM-EXT*)     *             *       -
+wb/eng/00/eng_0010   7   19                 ,     ,              *         -    -   -    _Shrubageddon_  *             *      *             *       -
+wb/eng/00/eng_0010   7   20                so    RB    (ADVP(ADVP*         -    -   -    _Shrubageddon_  *    (ARGM-ADV*      *             *       -
+wb/eng/00/eng_0010   7   21              long    RB              *)        -    -   -    _Shrubageddon_  *             *      *             *       -
+wb/eng/00/eng_0010   7   22                as    IN         (SBAR*         -    -   -    _Shrubageddon_  *             *      *             *       -
+wb/eng/00/eng_0010   7   23         everybody    NN         (S(NP*)        -    -   -    _Shrubageddon_  *             *      *        (ARG0*)    (88)
+wb/eng/00/eng_0010   7   24                's   VBZ           (VP*         be  03   -    _Shrubageddon_  *             *    (V*)            *       -
+wb/eng/00/eng_0010   7   25          embraced   VBN           (VP*    embrace  01   1    _Shrubageddon_  *             *      *           (V*)      -
+wb/eng/00/eng_0010   7   26                it   PRP           (NP*)        -    -   -    _Shrubageddon_  *             *      *        (ARG1*)   (157)
+wb/eng/00/eng_0010   7   27        completely    RB   (ADVP*)))))))        -    -   -    _Shrubageddon_  *             *)     *    (ARGM-EXT*)      -
+wb/eng/00/eng_0010   7   28                 .     .             *))        -    -   -    _Shrubageddon_  *             *      *             *       -
+
+wb/eng/00/eng_0010   7    0           If    IN  (TOP(S(SBAR*           -    -    -    _Shrubageddon_  *    (ARGM-ADV*      -
+wb/eng/00/eng_0010   7    1         they   PRP      (S(S(NP*)          -    -    -    _Shrubageddon_  *             *    (88)
+wb/eng/00/eng_0010   7    2         have   VBP          (VP*         have   -    -    _Shrubageddon_  *             *      -
+wb/eng/00/eng_0010   7    3          n't    RB            *))          -    -    -    _Shrubageddon_  *             *      -
+wb/eng/00/eng_0010   7    4            ,     ,             *           -    -    -    _Shrubageddon_  *             *      -
+wb/eng/00/eng_0010   7    5          and    CC             *           -    -    -    _Shrubageddon_  *             *      -
+wb/eng/00/eng_0010   7    6         only    RB        (S(NP*           -    -    -    _Shrubageddon_  *             *    (91
+wb/eng/00/eng_0010   7    7         some    DT             *)          -    -    -    _Shrubageddon_  *             *     91)
+wb/eng/00/eng_0010   7    8         have   VBP       (VP*))))        have   -   12    _Shrubageddon_  *             *)     -
+wb/eng/00/eng_0010   7    9            ,     ,             *           -    -    -    _Shrubageddon_  *             *      -
+wb/eng/00/eng_0010   7   10         then    RB        (ADVP*)          -    -    -    _Shrubageddon_  *    (ARGM-ADV*)     -
+wb/eng/00/eng_0010   7   11          the    DT          (NP*           -    -    -    _Shrubageddon_  *        (ARG1*    (91
+wb/eng/00/eng_0010   7   12         some    DT             *)          -    -    -    _Shrubageddon_  *             *)    91)
+wb/eng/00/eng_0010   7   13          are   VBP          (VP*           be  01    1    _Shrubageddon_  *           (V*)     -
+wb/eng/00/eng_0010   7   14        lambs   NNS       (NP(NP*)        lamb   -    -    _Shrubageddon_  *        (ARG2*      -
+wb/eng/00/eng_0010   7   15           to    IN          (PP*           -    -    -    _Shrubageddon_  *             *      -
+wb/eng/00/eng_0010   7   16          the    DT          (NP*           -    -    -    _Shrubageddon_  *             *      -
+wb/eng/00/eng_0010   7   17    slaughter    NN          *))))   slaughter   -    -    _Shrubageddon_  *             *)     -
+wb/eng/00/eng_0010   7   18            .     .            *))          -    -    -    _Shrubageddon_  *             *      -
+
+wb/eng/00/eng_0010   7   0     Hit     VB  (TOP(S(VP*      hit  01   1    _Shrubageddon_  *       (V*)  -
+wb/eng/00/eng_0010   7   1      Me    PRP        (NP*)      -    -   -    _Shrubageddon_  *    (ARG1*)  -
+wb/eng/00/eng_0010   7   2    With     IN        (PP*       -    -   -    _Shrubageddon_  *    (ARG2*   -
+wb/eng/00/eng_0010   7   3    Your   PRP$        (NP*       -    -   -    _Shrubageddon_  *         *   -
+wb/eng/00/eng_0010   7   4    Best    JJS           *       -    -   -    _Shrubageddon_  *         *   -
+wb/eng/00/eng_0010   7   5    Shot     NN         *)))   shoot   -   -    _Shrubageddon_  *         *)  -
+wb/eng/00/eng_0010   7   6       .      .          *))      -    -   -    _Shrubageddon_  *         *   -
+
+wb/eng/00/eng_0010   7   0    Fire   VB  (TOP(S(VP*    fire  01   1    _Shrubageddon_  *           (V*)  -
+wb/eng/00/eng_0010   7   1    Away   RP      (PRT*))     -    -   -    _Shrubageddon_  *    (ARGM-DIR*)  -
+wb/eng/00/eng_0010   7   2       .    .          *))     -    -   -    _Shrubageddon_  *             *   -
+
+wb/eng/00/eng_0010   7   0          I   PRP   (TOP(S(NP*)       -    -   -    _Shrubageddon_         *    (ARG1*)   (139)
+wb/eng/00/eng_0010   7   1         'm   VBP         (VP*        -    -   -    _Shrubageddon_         *         *       -
+wb/eng/00/eng_0010   7   2    waiting   VBG         (VP*      wait  01   1    _Shrubageddon_         *       (V*)      -
+wb/eng/00/eng_0010   7   3        for    IN         (PP*        -    -   -    _Shrubageddon_         *    (ARG2*       -
+wb/eng/00/eng_0010   7   4         an    DT      (NP(NP*        -    -   -    _Shrubageddon_         *         *       -
+wb/eng/00/eng_0010   7   5     answer    NN            *)   answer   -   -    _Shrubageddon_         *         *       -
+wb/eng/00/eng_0010   7   6         on    IN         (PP*        -    -   -    _Shrubageddon_         *         *       -
+wb/eng/00/eng_0010   7   7     Truman   NNP    (NP*))))))       -    -   -    _Shrubageddon_   (PERSON)        *)   (133)
+wb/eng/00/eng_0010   7   8          .     .           *))       -    -   -    _Shrubageddon_         *         *       -
+
+wb/eng/00/eng_0010   7   0        Is   VBZ  (TOP(SQ*    be  01   4    _Shrubageddon_  *       (V*)      -
+wb/eng/00/eng_0010   7   1        he   PRP      (NP*)   -    -   -    _Shrubageddon_  *    (ARG1*)   (133)
+wb/eng/00/eng_0010   7   2        in    IN      (PP*    -    -   -    _Shrubageddon_  *    (ARG2*       -
+wb/eng/00/eng_0010   7   3    heaven    NN     (NP*))   -    -   -    _Shrubageddon_  *         *)      -
+wb/eng/00/eng_0010   7   4         ?     .        *))   -    -   -    _Shrubageddon_  *         *       -
+
+wb/eng/00/eng_0010   7    0         We   PRP   (TOP(S(NP(NP*)     -    -   -    _dianna_  *   (ARG0*             *   -
+wb/eng/00/eng_0010   7    1        all    DT           (NP*))     -    -   -    _dianna_  *        *)            *   -
+wb/eng/00/eng_0010   7    2       knew   VBD            (VP*    know  01   1    _dianna_  *      (V*)            *   -
+wb/eng/00/eng_0010   7    3       that    IN          (SBAR*      -    -   -    _dianna_  *   (ARG1*             *   -
+wb/eng/00/eng_0010   7    4         we   PRP          (S(NP*)     -    -   -    _dianna_  *        *        (ARG0*)  -
+wb/eng/00/eng_0010   7    5       were   VBD            (VP*      be   -   -    _dianna_  *        *             *   -
+wb/eng/00/eng_0010   7    6    letting   VBG            (VP*     let  01   1    _dianna_  *        *           (V*)  -
+wb/eng/00/eng_0010   7    7      loose    RB          (ADVP*)     -    -   -    _dianna_  *        *    (ARGM-PRD*)  -
+wb/eng/00/eng_0010   7    8        the    DT         (NP(NP*      -    -   -    _dianna_  *        *        (ARG1*   -
+wb/eng/00/eng_0010   7    9       dogs   NNS               *)    dog   -   -    _dianna_  *        *             *   -
+wb/eng/00/eng_0010   7   10         of    IN            (PP*      -    -   -    _dianna_  *        *             *   -
+wb/eng/00/eng_0010   7   11        war    NN     (NP*))))))))     -    -   -    _dianna_  *        *)            *)  -
+wb/eng/00/eng_0010   7   12          .     .              *))     -    -   -    _dianna_  *        *             *   -
+
+wb/eng/00/eng_0010   7    0            It    PRP      (TOP(S(NP*)     -    -   -    _dianna_  *      *      *    (ARG1*)        *       -
+wb/eng/00/eng_0010   7    1            's    VBZ            (VP*      be  03   -    _dianna_  *    (V*)     *         *         *       -
+wb/eng/00/eng_0010   7    2         going    VBG            (VP*      go  04   -    _dianna_  *      *    (V*)        *         *       -
+wb/eng/00/eng_0010   7    3            to     TO          (S(VP*      -    -   -    _dianna_  *      *      *         *         *       -
+wb/eng/00/eng_0010   7    4            be     VB            (VP*      be  01   1    _dianna_  *      *      *       (V*)        *       -
+wb/eng/00/eng_0010   7    5          hard     JJ     (ADJP(ADJP*)     -    -   -    _dianna_  *      *      *    (ARG2*         *       -
+wb/eng/00/eng_0010   7    6             ,      ,               *      -    -   -    _dianna_  *      *      *         *         *       -
+wb/eng/00/eng_0010   7    7           but     CC               *      -    -   -    _dianna_  *      *      *         *         *       -
+wb/eng/00/eng_0010   7    8           not     RB               *      -    -   -    _dianna_  *      *      *         *         *       -
+wb/eng/00/eng_0010   7    9    impossible     JJ          (ADJP*)     -    -   -    _dianna_  *      *      *         *         *       -
+wb/eng/00/eng_0010   7   10             ,      ,               *      -    -   -    _dianna_  *      *      *         *         *       -
+wb/eng/00/eng_0010   7   11           for     IN          (SBAR*      -    -   -    _dianna_  *      *      *         *         *       -
+wb/eng/00/eng_0010   7   12       society     NN          (S(NP*)     -    -   -    _dianna_  *      *      *         *    (ARG0*)      -
+wb/eng/00/eng_0010   7   13            to     TO            (VP*      -    -   -    _dianna_  *      *      *         *         *       -
+wb/eng/00/eng_0010   7   14           put     VB            (VP*     put  01   1    _dianna_  *      *      *         *       (V*)      -
+wb/eng/00/eng_0010   7   15           the     DT         (NP(NP*      -    -   -    _dianna_  *      *      *         *    (ARG1*    (116
+wb/eng/00/eng_0010   7   16          dogs    NNS               *)    dog   -   -    _dianna_  *      *      *         *         *       -
+wb/eng/00/eng_0010   7   17            of     IN            (PP*      -    -   -    _dianna_  *      *      *         *         *       -
+wb/eng/00/eng_0010   7   18           war     NN          (NP*)))     -    -   -    _dianna_  *      *      *         *         *)    116)
+wb/eng/00/eng_0010   7   19          back     RB          (ADVP*      -    -   -    _dianna_  *      *      *         *    (ARG2*       -
+wb/eng/00/eng_0010   7   20            in     IN            (PP*      -    -   -    _dianna_  *      *      *         *         *       -
+wb/eng/00/eng_0010   7   21         their   PRP$            (NP*      -    -   -    _dianna_  *      *      *         *         *    (116)
+wb/eng/00/eng_0010   7   22         cages    NNS   *)))))))))))))   cage   -   -    _dianna_  *      *      *         *)        *)      -
+wb/eng/00/eng_0010   7   23             .      .              *))     -    -   -    _dianna_  *      *      *         *         *       -
+
+wb/eng/00/eng_0010   7   0      You   PRP   (TOP(S(NP*)   -    -   -    _ericswan_  *    (ARG1*)  -
+wb/eng/00/eng_0010   7   1      're   VBP         (VP*    be  01   1    _ericswan_  *       (V*)  -
+wb/eng/00/eng_0010   7   2     both    DT            *    -    -   -    _ericswan_  *         *   -
+wb/eng/00/eng_0010   7   3    right    JJ      (ADJP*))   -    -   -    _ericswan_  *    (ARG2*)  -
+wb/eng/00/eng_0010   7   4        .     .           *))   -    -   -    _ericswan_  *         *   -
+
+wb/eng/00/eng_0010   7    0              No    UH   (TOP(S(INTJ*)     -    -   -    _Anonymous_         *    (ARGM-DIS*)      -
+wb/eng/00/eng_0010   7    1               ,     ,              *      -    -   -    _Anonymous_         *             *       -
+wb/eng/00/eng_0010   7    2           EricS   NNP        (NP(NP*)     -    -   -    _Anonymous_   (PERSON)       (ARG1*     (29)
+wb/eng/00/eng_0010   7    3               ,     ,              *      -    -   -    _Anonymous_         *             *       -
+wb/eng/00/eng_0010   7    4    shrubmegiddo   NNP          (NP*))     -    -   -    _Anonymous_   (PERSON)            *)   (139)
+wb/eng/00/eng_0010   7    5              is   VBZ           (VP*      be  01   1    _Anonymous_         *           (V*)      -
+wb/eng/00/eng_0010   7    6          simply    RB         (ADJP*      -    -   -    _Anonymous_         *        (ARG2*       -
+wb/eng/00/eng_0010   7    7            full    JJ              *      -    -   -    _Anonymous_         *             *       -
+wb/eng/00/eng_0010   7    8              of    IN           (PP*      -    -   -    _Anonymous_         *             *       -
+wb/eng/00/eng_0010   7    9            shit    NN        (NP*))))   shit   -   -    _Anonymous_         *             *)      -
+wb/eng/00/eng_0010   7   10               .     .             *))     -    -   -    _Anonymous_         *             *       -
+
+wb/eng/00/eng_0010   7    0             ``    ``  (TOP(SBARQ*             -    -   -    _Anonymous_  *             *             *       -
+wb/eng/00/eng_0010   7    1            How   WRB     (WHADVP*)            -    -   -    _Anonymous_  *    (ARGM-MNR*)            *       -
+wb/eng/00/eng_0010   7    2            can    MD         (SQ*             -    -   -    _Anonymous_  *    (ARGM-MOD*)            *       -
+wb/eng/00/eng_0010   7    3              I   PRP         (NP*)            -    -   -    _Anonymous_  *        (ARG0*)            *    (139)
+wb/eng/00/eng_0010   7    4          blame    VB         (VP*          blame  01   1    _Anonymous_  *           (V*)            *       -
+wb/eng/00/eng_0010   7    5      something    NN         (NP*)            -    -   -    _Anonymous_  *        (ARG1*)            *     (78)
+wb/eng/00/eng_0010   7    6             if    IN       (SBAR*             -    -   -    _Anonymous_  *    (ARGM-ADV*             *       -
+wb/eng/00/eng_0010   7    7              I   PRP       (S(NP*)            -    -   -    _Anonymous_  *             *        (ARG0*)   (139)
+wb/eng/00/eng_0010   7    8             do   VBP         (VP*             do   -   -    _Anonymous_  *             *             *       -
+wb/eng/00/eng_0010   7    9            n't    RB            *             -    -   -    _Anonymous_  *             *    (ARGM-NEG*)      -
+wb/eng/00/eng_0010   7   10    acknowledge    VB         (VP*    acknowledge  01   1    _Anonymous_  *             *           (V*)      -
+wb/eng/00/eng_0010   7   11             it   PRP   (NP*)))))))            -    -   -    _Anonymous_  *             *)       (ARG1*)    (78)
+wb/eng/00/eng_0010   7   12              ?     .            *             -    -   -    _Anonymous_  *             *             *       -
+wb/eng/00/eng_0010   7   13             ''    ''           *))            -    -   -    _Anonymous_  *             *             *       -
+
+wb/eng/00/eng_0010   7   0     How   WRB  (TOP(WHADJP*   -   -   -    _Anonymous_  *   -
+wb/eng/00/eng_0010   7   1    wise    JJ             *   -   -   -    _Anonymous_  *   -
+wb/eng/00/eng_0010   7   2       .     .            *))  -   -   -    _Anonymous_  *   -
+
+wb/eng/00/eng_0010   7   0         Que   FW  (TOP(FRAG*   -   -   -    _Anonymous_  *   -
+wb/eng/00/eng_0010   7   1    profundo   FW           *   -   -   -    _Anonymous_  *   -
+wb/eng/00/eng_0010   7   2           .    .          *))  -   -   -    _Anonymous_  *   -
+
+wb/eng/00/eng_0010   7   0    Well   UH  (TOP(INTJ*   -   -   -    _Anonymous_  *   -
+wb/eng/00/eng_0010   7   1       ,    ,           *   -   -   -    _Anonymous_  *   -
+wb/eng/00/eng_0010   7   2    d'uh   UH           *   -   -   -    _Anonymous_  *   -
+wb/eng/00/eng_0010   7   3       ,    ,          *))  -   -   -    _Anonymous_  *   -
+
+wb/eng/00/eng_0010   7   0      that    DT   (TOP(S(NP*)     -    -   -    _Anonymous_  *      *        (ARG1*)     -
+wb/eng/00/eng_0010   7   1        's   VBZ         (VP*      be  03   1    _Anonymous_  *    (V*)            *      -
+wb/eng/00/eng_0010   7   2      just    RB       (ADVP*)     -    -   -    _Anonymous_  *      *    (ARGM-ADV*)     -
+wb/eng/00/eng_0010   7   3    called   VBN         (VP*    call  01   5    _Anonymous_  *      *           (V*)     -
+wb/eng/00/eng_0010   7   4    DENIAL    NN      (S(NP*))     -    -   -    _Anonymous_  *      *        (ARG2*)     -
+wb/eng/00/eng_0010   7   5         ,     ,            *      -    -   -    _Anonymous_  *      *             *      -
+wb/eng/00/eng_0010   7   6     moron    NN       (NP*)))     -    -   -    _Anonymous_  *      *    (ARGM-DIS*)   (29)
+wb/eng/00/eng_0010   7   7         .     .           *))     -    -   -    _Anonymous_  *      *             *      -
+
+wb/eng/00/eng_0010   7    0       Like     IN      (TOP(PP*      -   -   -    _Anonymous_       *   -
+wb/eng/00/eng_0010   7    1       what     WP   (SBAR(WHNP*)     -   -   -    _Anonymous_       *   -
+wb/eng/00/eng_0010   7    2        the     DT        (S(NP*      -   -   -    _Anonymous_       *   -
+wb/eng/00/eng_0010   7    3    Foxsies   NNPS     (NML(NML*)     -   -   -    _Anonymous_   (NORP)  -
+wb/eng/00/eng_0010   7    4        and     CC             *      -   -   -    _Anonymous_       *   -
+wb/eng/00/eng_0010   7    5        oil     NN     (NML(NML*     oil  -   -    _Anonymous_       *   -
+wb/eng/00/eng_0010   7    6        co.     NN             *)     -   -   -    _Anonymous_       *   -
+wb/eng/00/eng_0010   7    7     shills    NNS           *)))     -   -   -    _Anonymous_       *   -
+wb/eng/00/eng_0010   7    8         do    VBP          (VP*      do  -   -    _Anonymous_       *   -
+wb/eng/00/eng_0010   7    9         re     IN          (PP*      -   -   -    _Anonymous_       *   -
+wb/eng/00/eng_0010   7   10     Global     JJ          (NP*      -   -   -    _Anonymous_       *   -
+wb/eng/00/eng_0010   7   11    Warming     NN         *)))))   warm  -   -    _Anonymous_       *   -
+wb/eng/00/eng_0010   7   12          .      .            *))     -   -   -    _Anonymous_       *   -
+
+wb/eng/00/eng_0010   7   0        What   WDT  (TOP(WHNP*   -   -   -    _Anonymous_  *   -
+wb/eng/00/eng_0010   7   1           a    DT           *   -   -   -    _Anonymous_  *   -
+wb/eng/00/eng_0010   7   2    complete    JJ           *   -   -   -    _Anonymous_  *   -
+wb/eng/00/eng_0010   7   3     dumshit    NN           *   -   -   -    _Anonymous_  *   -
+wb/eng/00/eng_0010   7   4           .     .          *))  -   -   -    _Anonymous_  *   -
+
+#end document

@@ -52,9 +52,6 @@ class TokenRange:
     def inside(self, token_range: "TokenRange") -> bool:
         return self.start <= token_range.start and self.end >= token_range.end
 
-    # def __eq__(self, token_range: "TokenRange") -> bool:
-    #     return if start
-
     @staticmethod
     def from_list(list_of_consecutive_elements: List[int]) -> "TokenRange":
         return TokenRange(list_of_consecutive_elements[0], list_of_consecutive_elements[-1])

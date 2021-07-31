@@ -5,6 +5,8 @@ from dataclasses import dataclass
 from typing import Dict, List, cast, Set, Any
 from pathlib import Path
 
+from torch.functional import split
+
 from utils.util_types import EncodingType, TensorType, Optional
 
 VALID_TENSOR_TYPES = {"pt": TensorType.torch, "tf": TensorType.tensorFlow, "np": TensorType.numpy}
@@ -26,6 +28,22 @@ class ModelCfg:
     dev_mode: bool
     train: bool
     params: Dict[str, int]
+    batch_size: int
+    split_value: float
+    training_folder: Path
+    enable_cuda: bool
+
+    @staticmethod
+    def load_config(cfg: Dict[str, Any]) -> "ModelCfg":
+        return ModelCfg(
+            cfg["dev_mode"],
+            cfg["train"],
+            cfg["params"],
+            cfg["batch_size"],
+            cfg["split_value"],
+            Path(cfg["training_folder"]),
+            cfg["enable_cuda"],
+        )
 
 
 @dataclass(frozen=True)
@@ -81,7 +99,7 @@ class Config:
                 Dict[str, Any],  # type: ignore
                 {
                     "data_path": DataPaths.load_config(cfg["data"]),
-                    "model": ModelCfg(**cfg["model"]),
+                    "model": ModelCfg.load_config(cfg["model"]),
                     "encoding": EncodingCfg.load_config(cfg["encoding"]),
                     "cache": CacheCfg.load_config(cfg["cache"]),
                     "text": TextCfg.load_config(cfg["text"]),

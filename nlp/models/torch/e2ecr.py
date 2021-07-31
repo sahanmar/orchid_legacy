@@ -1,13 +1,16 @@
-from re import L
 import torch
 import torch.nn as nn
 import torch.optim as optim
 
-from typing import List, Union, Dict
+from typing import List, Tuple, Union, Dict
+
+from torch.tensor import Tensor
 from utils.util_types import TokenRange
 
 from datetime import datetime
 from tqdm import tqdm
+
+from pathlib import Path
 
 
 class Score(nn.Module):
@@ -145,13 +148,13 @@ class E2ECR(nn.Module):
         self.score_spans = MentionScore(gi_dim, attn_dim)
         self.score_pairs = PairwiseScore(gij_dim)
 
-    def forward(self, batch_encoded_docs: torch.Tensor, batch_spans_ids: List[List[TokenRange]]):
+    def forward(self, encoded_docs: torch.Tensor, spans_ids: List[List[TokenRange]]) -> torch.Tensor:
         """
         Predict pairwise coreference scores
         """
 
         # Get mention scores for each span
-        g_i, mention_scores = self.score_spans(batch_encoded_docs, batch_spans_ids)
+        g_i, mention_scores = self.score_spans(encoded_docs, spans_ids)
 
         # Get pairwise scores for each span combo
         coref_scores = self.score_pairs(g_i, mention_scores)
@@ -162,27 +165,29 @@ class E2ECR(nn.Module):
 class Trainer:
     """Class dedicated to training and evaluating the model"""
 
-    def __init__(self, model, train_corpus, val_corpus, test_corpus, lr=1e-3, steps=100):
+    def __init__(self, model: E2ECR, lr: float = 1e-3, enable_cuda=False):
 
-        self.train_corpus = train_corpus
-        self.val_corpus = val_corpus
-        self.test_corpus = test_corpus
-
-        self.steps = steps
-
-        self.model = to_cuda(model)
+        self.model = to_cuda(model) if enable_cuda else model
 
         self.optimizer = optim.Adam(params=[p for p in self.model.parameters() if p.requires_grad], lr=lr)
-
         self.scheduler = optim.lr_scheduler.StepLR(self.optimizer, step_size=100, gamma=0.001)
 
-    def train(self, num_epochs, eval_interval=10, *args, **kwargs):
+        self.loss_fn = nn.CrossEntropyLoss()
+
+    def train(
+        self,
+        train_data: Tuple[List[torch.Tensor], List[List[List[TokenRange]]], List[torch.Tensor]],
+        test_data: Tuple[List[torch.Tensor], List[List[List[TokenRange]]], List[torch.Tensor]],
+        folder_to_save: Path,
+        num_epochs: int,
+        eval_interval: int = 10,
+    ):
         """ Train a model """
         for epoch in range(1, num_epochs + 1):
-            self.train_epoch(epoch)
+            _, _ = self.train_epoch(train_data, epoch)
 
             # Save often
-            self.save_model(str(datetime.now()))
+            self.save_model(folder_to_save / (str(datetime.now()) + ".pt"))
 
             # TODO Implemend eval step
 
@@ -193,48 +198,59 @@ class Trainer:
             #     results = self.evaluate(self.val_corpus)
             #     print(results)
 
-    def train_epoch(self, epoch):
+    def train_epoch(
+        self,
+        data: Tuple[List[torch.Tensor], List[List[List[TokenRange]]], List[torch.Tensor]],
+        epoch: int,
+    ) -> Tuple[List[float], List[float]]:
         """ Run a training epoch over 'steps' documents """
 
         # Set model to train (enables dropout)
         self.model.train()
 
-        epoch_loss, epoch_mentions, epoch_corefs, epoch_identified = [], [], [], []
+        epoch_loss, epoch_accuracy = [], []
 
-        for document in tqdm(self.train_corpus):
+        for instances, span_ids, target in tqdm(zip(*data)):
 
             # Compute loss, number gold links found, total gold links
-            loss, mentions_found, total_mentions, corefs_found, total_corefs, corefs_chosen = self.train_doc(
-                document
-            )
+            loss, accuracy = self.train_doc(instances, span_ids, target)
 
             # Track stats by document for debugging
             print(
-                document,
-                "| Loss: %f '|" % loss,
+                epoch,
+                f"| Loss: {loss} '| Accuracy: {accuracy} |",
             )
-
             epoch_loss.append(loss)
+            epoch_accuracy.append(accuracy)
 
         # Step the learning rate decrease scheduler
         self.scheduler.step()
+        return epoch_loss, epoch_accuracy
 
-    def train_doc(self, document):
+    def train_doc(
+        self, instances: torch.Tensor, span_ids: List[List[TokenRange]], target: torch.Tensor
+    ) -> Tuple[float, float]:
         """ Compute loss for a forward pass over a document """
 
         # Zero out optimizer gradients
         self.optimizer.zero_grad()
 
-        # TODO add metrics
-        # Init metrics
-        # mentions_found, corefs_found, corefs_chosen = 0, 0, 0
-
         # Predict coref probabilites for each span in a document
-        probs = self.model(document)
+        probs = self.model(instances, span_ids)
+
+        # import IPython
+
+        # IPython.embed()
+
+        # Cannot consume 4D tensor! :)
+        # Cross entropy log-likelihood
+        loss = self.loss_fn(probs, target)
+        # Naive accuracy result
+        accuracy = ((probs > 0.5).float() == target).float().sum()
 
         # Negative marginal log-likelihood
-        eps = 1e-8
-        loss = torch.sum(torch.log(torch.sum(torch.mul(probs, document), dim=4).clamp_(eps, 1 - eps)) * -1)
+        # eps = 1e-8
+        # loss = torch.sum(torch.log(torch.sum(torch.mul(probs, document), dim=4).clamp_(eps, 1 - eps)) * -1)
 
         # Backpropagate
         loss.backward()
@@ -242,11 +258,11 @@ class Trainer:
         # Step the optimizer
         self.optimizer.step()
 
-        return loss.item()
+        return loss.item(), accuracy
 
-    def save_model(self, savepath):
+    def save_model(self, savepath: Path) -> None:
         """ Save model state dictionary """
-        torch.save(self.model.state_dict(), savepath + ".pth")
+        torch.save(self.model.state_dict(), savepath)
 
 
 def to_cuda(model: Union[nn.Module, torch.Tensor]):

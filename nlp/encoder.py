@@ -168,7 +168,9 @@ def bpe_to_original_embeddings_many(
     raise TypeError("Smth is wrong with types...")
 
 
-def to_doc_based_batches(tensors_2_batch: List[torch.Tensor], doc_id_array: List[int]) -> torch.Tensor:
+def to_doc_based_batches(
+    tensors_2_batch: List[torch.Tensor], doc_id_array: List[int], batch_size: int
+) -> List[torch.Tensor]:
     doc_id_w_sent_id = [(doc_i, sent_i) for sent_i, doc_i in enumerate(doc_id_array)]
     sliced_sent_ids = [list(group[1]) for group in groupby(doc_id_w_sent_id, key=lambda x: x[0])]
 
@@ -180,7 +182,10 @@ def to_doc_based_batches(tensors_2_batch: List[torch.Tensor], doc_id_array: List
         for sent_ids in sliced_sent_ids
     ]
     lengths = [t.size()[1] for t in doc_tensors]
-    return torch_custom_padding(doc_tensors, lengths)
+    return [
+        torch_custom_padding(doc_tensors[i_start:i_end], lengths[i_start:i_end])
+        for i_start, i_end in zip(*get_batch_idxs(len(doc_tensors), batch_size))
+    ]
 
 
 def torch_custom_flatten(tensors_2_flatten: List[torch.Tensor], lengths: List[int]) -> torch.Tensor:
@@ -247,3 +252,12 @@ def text_based_span_and_corref_tokens_shift(
         for correfs in shift_correfs
     ]
     return text_spans, grouped_shift_correfs
+
+
+def get_batch_idxs(array_size: int, batch_size: int) -> Tuple[List[int], List[int]]:
+    # The method returns start and end idxs lists to split the array to batches
+    if array_size <= batch_size:
+        return [0], [array_size]
+    slice_idx = [i for i in range(array_size) if i % batch_size == 0]
+    slice_idx.append(array_size)
+    return slice_idx[:-1], slice_idx[1:]

@@ -11,7 +11,11 @@
             "embeds_dim": 768,
             "hidden_dim": 20,
             "distance_dim": 20
-        }
+        },
+        "batch_size": 32,
+        "split_value": 0.5,
+        "training_folder": "training_folder",
+        "enable_cuda": true
     },
     "text": {
         "correference_tags": [
