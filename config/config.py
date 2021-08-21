@@ -2,8 +2,10 @@ import json
 import sys
 
 from dataclasses import dataclass
-from typing import Dict, cast, TypeVar, Any
+from typing import Dict, List, cast, Set, Any
 from pathlib import Path
+
+from torch.functional import split
 
 from utils.util_types import EncodingType, TensorType, Optional
 
@@ -25,6 +27,23 @@ class DataPaths:
 class ModelCfg:
     dev_mode: bool
     train: bool
+    params: Dict[str, int]
+    batch_size: int
+    split_value: float
+    training_folder: Path
+    enable_cuda: bool
+
+    @staticmethod
+    def load_config(cfg: Dict[str, Any]) -> "ModelCfg":
+        return ModelCfg(
+            cfg["dev_mode"],
+            cfg["train"],
+            cfg["params"],
+            cfg["batch_size"],
+            cfg["split_value"],
+            Path(cfg["training_folder"]),
+            cfg["enable_cuda"],
+        )
 
 
 @dataclass(frozen=True)
@@ -52,11 +71,21 @@ class CacheCfg:
 
 
 @dataclass(frozen=True)
+class TextCfg:
+    correference_tags: Set[str]
+
+    @staticmethod
+    def load_config(cfg: Dict[str, List[str]]):
+        return TextCfg(set(cfg.get("correference_tags", set())))
+
+
+@dataclass(frozen=True)
 class Config:
     data_path: DataPaths
     model: ModelCfg
     encoding: EncodingCfg
     cache: Optional[CacheCfg]
+    text: TextCfg
 
     @staticmethod
     def load_config(config_path: Path) -> "Config":
@@ -70,9 +99,10 @@ class Config:
                 Dict[str, Any],  # type: ignore
                 {
                     "data_path": DataPaths.load_config(cfg["data"]),
-                    "model": ModelCfg(**cfg["model"]),
+                    "model": ModelCfg.load_config(cfg["model"]),
                     "encoding": EncodingCfg.load_config(cfg["encoding"]),
                     "cache": CacheCfg.load_config(cfg["cache"]),
+                    "text": TextCfg.load_config(cfg["text"]),
                 },
             )
         )

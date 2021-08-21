@@ -1,7 +1,7 @@
 import re
 
 from pathlib import Path
-from typing import Tuple, List, Dict
+from typing import Optional, Set, Tuple, List, Dict
 from itertools import groupby
 
 from utils.util_types import ConllSentence, TokenRange, Morphology, CorrefTokenType
@@ -14,19 +14,18 @@ span_key_pat = re.compile(r"[a-zA-Z]+")
 
 
 class ConllParser:
-    def __init__(self, path: Path):
+    def __init__(self, path: Path, coref_to_leave: Optional[Set[str]]):
         self.path = path
+        self.coref_to_leave = coref_to_leave if coref_to_leave else set()
 
     def __call__(self) -> List[ConllSentence]:
         texts = self.split_file_2_texts(self.path)
 
         parsed_sentences: List[ConllSentence] = []
-        sent_i = 0
-        for sentence in texts:
-            if sentence == "art_break":
-                sent_i = 0
-            parsed_sentences.append(self.process_sentence(sentence, sent_i))
-            sent_i += 1
+        doc_i = 0
+        for doc_i, text in enumerate(texts):
+            for sentence in text:
+                parsed_sentences.append(self.process_sentence(sentence, doc_i))
 
         return parsed_sentences
 
@@ -39,7 +38,8 @@ class ConllParser:
             if config.model.train
             else config.data_path.test
         )
-        return ConllParser(path)
+        coref_to_leave = config.text.correference_tags
+        return ConllParser(path, coref_to_leave)
 
     def add_corref_mutable(
         self,
@@ -58,7 +58,7 @@ class ConllParser:
             else:
                 corref_dict[cr_label][-1].end = i_token + 1
 
-    def process_sentence(self, sentence: List[str], sent_index) -> ConllSentence:
+    def process_sentence(self, sentence: List[str], document_index: int) -> ConllSentence:
 
         tokens: List[Morphology] = []
         correferences: Dict[int, List[TokenRange]] = {}
@@ -109,13 +109,14 @@ class ConllParser:
         # Group spans with respect to the span types
         sorted_spans = sorted(spans, key=lambda x: x[1])
         grouped_spans = {
-            key: [s_idxs for s_idxs, _ in span_idxs_w_keys]
+            key: [TokenRange.from_list(s_idxs) for s_idxs, _ in span_idxs_w_keys]
             for key, span_idxs_w_keys in groupby(sorted_spans, key=lambda x: x[1])
+            if key in self.coref_to_leave or not self.coref_to_leave
         }
 
         return ConllSentence(
             folder=folder,
-            sentence_index=int(sent_index),
+            document_index=document_index,
             word_tokens=tokens,
             speaker=speaker,
             correferences=correferences,
@@ -123,20 +124,22 @@ class ConllParser:
         )
 
     @staticmethod
-    def split_file_2_texts(path: Path) -> List[List[str]]:
+    def split_file_2_texts(path: Path) -> List[List[List[str]]]:
 
-        texts: List[List[str]] = []
+        texts: List[List[List[str]]] = []
         sentence: List[str] = []
+        text: List[List[str]] = []
 
         with open(path, "r") as f:
             for line in f.readlines():
                 if line.startswith("#begin document"):
                     continue
                 if line.startswith("#end document"):
-                    sentence.append("art_break")
+                    texts.append(text)
+                    text = []
                     continue
                 if not line.strip():
-                    texts.append(sentence)
+                    text.append(sentence)
                     del sentence
                     sentence = []
                     continue
