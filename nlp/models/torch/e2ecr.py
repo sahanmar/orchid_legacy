@@ -159,7 +159,7 @@ class E2ECR(nn.Module):
         # Get pairwise scores for each span combo
         coref_scores = self.score_pairs(g_i, mention_scores)
 
-        return coref_scores
+        return torch.clamp(coref_scores, min=0, max=1)
 
 
 class Trainer:
@@ -172,7 +172,7 @@ class Trainer:
         self.optimizer = optim.Adam(params=[p for p in self.model.parameters() if p.requires_grad], lr=lr)
         self.scheduler = optim.lr_scheduler.StepLR(self.optimizer, step_size=100, gamma=0.001)
 
-        self.loss_fn = nn.CrossEntropyLoss()
+        self.loss_fn = nn.BCELoss()
 
     def train(
         self,
@@ -238,19 +238,11 @@ class Trainer:
         # Predict coref probabilites for each span in a document
         probs = self.model(instances, span_ids)
 
-        # import IPython
-
-        # IPython.embed()
-
-        # Cannot consume 4D tensor! :)
         # Cross entropy log-likelihood
-        loss = self.loss_fn(probs, target)
-        # Naive accuracy result
-        accuracy = ((probs > 0.5).float() == target).float().sum()
+        loss = self.loss_fn(probs.view(-1), target.view(-1))
 
-        # Negative marginal log-likelihood
-        # eps = 1e-8
-        # loss = torch.sum(torch.log(torch.sum(torch.mul(probs, document), dim=4).clamp_(eps, 1 - eps)) * -1)
+        # Naive accuracy result
+        accuracy = ((probs > 0.5).float() == target).float().sum() / torch.numel(probs)
 
         # Backpropagate
         loss.backward()
