@@ -84,11 +84,12 @@ class OrchidPipeline:
                 )
                 # Initialize Trainer
                 trainer = Trainer(model)
+
                 # trainer.train(
                 #     train_data=(train_docs, train_span_ids, train_target),
                 #     test_data=(test_docs, test_span_ids, test_target),
                 #     folder_to_save=self.corref_config.training_folder,
-                #     num_epochs=10,
+                #     num_epochs=5,
                 # )
 
             model_out = [
