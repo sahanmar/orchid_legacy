@@ -4,7 +4,7 @@ import torch.optim as optim
 
 from typing import List, Tuple, Union, Dict
 
-from torch.tensor import Tensor
+from torch import Tensor
 from utils.util_types import TokenRange
 
 from datetime import datetime
@@ -12,6 +12,7 @@ from tqdm import tqdm
 
 from pathlib import Path
 
+CONTEXT  = {"device": torch.device("cuda" if torch.cuda.is_available() else "cpu"), "dtype": torch.float32}
 
 class Score(nn.Module):
     """Generic scoring module"""
@@ -31,7 +32,7 @@ class Score(nn.Module):
 
     def forward(self, x):
         """ Output a scalar score for an input x """
-        return self.score(x)
+        return self.score(x.to(CONTEXT["device"]))
 
 
 class MentionScore(nn.Module):
@@ -236,10 +237,10 @@ class Trainer:
         self.optimizer.zero_grad()
 
         # Predict coref probabilites for each span in a document
-        probs = self.model(instances, span_ids)
+        probs = self.model(instances.to(CONTEXT["device"]), span_ids)
 
         # Cross entropy log-likelihood
-        loss = self.loss_fn(probs.view(-1), target.view(-1))
+        loss = self.loss_fn(probs.view(-1).to(CONTEXT["device"]), target.view(-1).to(CONTEXT["device"]))
 
         # Naive accuracy result
         accuracy = ((probs > 0.5).float() == target).float().sum() / torch.numel(probs)

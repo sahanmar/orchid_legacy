@@ -15,6 +15,8 @@ from utils.util_types import ConllSentence
 
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 
+CONTEXT = {"device": torch.device("cuda" if torch.cuda.is_available() else "cpu"), "dtype": torch.float32}
+
 INCONSISTENCY_TOKENS = {"'"}
 
 ENCODER_MAPPER = {
@@ -88,7 +90,7 @@ class GeneralisedBertEncoder:
             if encoded_sent is None:
                 encoded_sent = self(sentence, tensors_type)
                 cacher.create_cache(hashed_text, encoded_sent)
-            encoded_sentences.append(encoded_sent)
+            encoded_sentences.append(encoded_sent.to(CONTEXT["device"]))
         return encoded_sentences
 
     def get_cached(self, hash: str) -> Optional[Dict[str, Union[Tensor, List[List[int]]]]]:
