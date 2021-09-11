@@ -4,10 +4,17 @@ import numpy as np
 from pathlib import Path
 from typing import Dict, List, TypeVar, Union, Optional
 
+from torch.tensor import Tensor
+
 from config.config import CacheCfg
 from utils.util_types import TensorType
 
 EncodedInstance = TypeVar("EncodedInstance")
+
+CONTEXT = {
+    "device": torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu"),
+    "dtype": torch.float32,
+}
 
 
 class Cacher:
@@ -39,9 +46,13 @@ class Cacher:
             return None
         instance_dir_path = self.path / hash
         tensor_dir_path = instance_dir_path / str(self.tensor_type.value)
+        input_ids = self.load_tensor(tensor_dir_path / "input_ids")  # type: ignore
+        tensors = self.load_tensor(tensor_dir_path / "tensors")  # type: ignore
         return {
-            "input_ids": self.load_tensor(tensor_dir_path / "input_ids"),
-            "tensors": self.load_tensor(tensor_dir_path / "tensors"),
+            "input_ids": input_ids.to(
+                CONTEXT["device"] if isinstance(input_ids, torch.Tensor) else input_ids
+            ),
+            "tensors": tensors.to(CONTEXT["device"] if isinstance(tensors, torch.Tensor) else tensors),
             "original_tokens": self.load_original_tokens_ids(instance_dir_path / "original_tokens.txt"),  # type: ignore
         }
 

@@ -15,7 +15,10 @@ from utils.util_types import ConllSentence
 
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 
-CONTEXT = {"device": torch.device("cuda" if torch.cuda.is_available() else "cpu"), "dtype": torch.float32}
+CONTEXT = {
+    "device": torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu"),
+    "dtype": torch.float32,
+}
 
 INCONSISTENCY_TOKENS = {"'"}
 
@@ -35,7 +38,7 @@ Tensor = TypeVar("Tensor", torch.Tensor, np.ndarray)
 
 class GeneralisedBertEncoder:
     def __init__(self, model: AutoModel, tokenizer: AutoTokenizer):
-        self.model = model
+        self.model = model.to(CONTEXT["device"])
         self.tokenizer = tokenizer
 
     @staticmethod
@@ -70,8 +73,8 @@ class GeneralisedBertEncoder:
             tensors = self.model(**tokenized)
 
         return {
-            "input_ids": tokenized["input_ids"],
-            "tensors": tensors["last_hidden_state"],
+            "input_ids": tokenized["input_ids"].to(CONTEXT["device"]),
+            "tensors": tensors["last_hidden_state"].to(CONTEXT["device"]),
             "original_tokens": self._bpe_to_original_tokens_indices(pbe_tokens),
         }
 

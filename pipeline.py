@@ -21,6 +21,7 @@ from utils.util_types import PipelineOutput, Response
 
 context = {"device": torch.device("cuda" if torch.cuda.is_available() else "cpu"), "dtype": torch.float32}
 
+
 class OrchidPipeline:
     def __init__(
         self,
@@ -44,7 +45,7 @@ class OrchidPipeline:
         )
 
     def __call__(self):
-        #try:
+        # try:
         if 1:
             # Load Data
             sentences = self.data_loader()
@@ -88,12 +89,13 @@ class OrchidPipeline:
                 )
                 # Initialize Trainer
                 trainer = Trainer(model)
-                trainer.train(
-                    train_data=(train_docs, train_span_ids, train_target),
-                    test_data=(test_docs, test_span_ids, test_target),
-                    folder_to_save=self.corref_config.training_folder,
-                    num_epochs=3,
-                )
+
+                # trainer.train(
+                #     train_data=(train_docs, train_span_ids, train_target),
+                #     test_data=(test_docs, test_span_ids, test_target),
+                #     folder_to_save=self.corref_config.training_folder,
+                #     num_epochs=5,
+                # )
 
             model_out = [
                 model(doc_based_batch, text_spans_batch)
@@ -102,5 +104,5 @@ class OrchidPipeline:
 
             return PipelineOutput(state=Response.success)
 
-        #except:  # must specify the error type
+        # except:  # must specify the error type
         #    return PipelineOutput(state=Response.fail)

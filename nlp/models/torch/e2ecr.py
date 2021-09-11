@@ -12,7 +12,11 @@ from tqdm import tqdm
 
 from pathlib import Path
 
-CONTEXT  = {"device": torch.device("cuda" if torch.cuda.is_available() else "cpu"), "dtype": torch.float32}
+CONTEXT = {
+    "device": torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu"),
+    "dtype": torch.float32,
+}
+
 
 class Score(nn.Module):
     """Generic scoring module"""
@@ -41,8 +45,8 @@ class MentionScore(nn.Module):
     def __init__(self, gi_dim: int, attn_dim: int):
         super().__init__()
 
-        self.attention = Score(attn_dim)
-        self.score = Score(gi_dim)
+        self.attention = Score(attn_dim).to(CONTEXT["device"])  # type: ignore
+        self.score = Score(gi_dim).to(CONTEXT["device"])  # type: ignore
 
     def forward(self, batch_embeds: torch.Tensor, batch_spans_ids: List[List[TokenRange]], K=250):
         """
@@ -57,27 +61,34 @@ class MentionScore(nn.Module):
 
         # Get dimensions for BATCH x DOCUMENT_SPANS x 3*EMBED structure
         the_highest_span_count = max(len(document_span_ids) for document_span_ids in batch_spans_ids)
-        batch_size, _, embeds_size = list(batch_embeds.size())
 
         # Create and fill BATCH x DOCUMENT_SPANS x 3*EMBED tensor
-        batch_document_span_embeds = torch.zeros((batch_size, the_highest_span_count, 3 * embeds_size))
-        for doc_id, document_span_ids in enumerate(batch_spans_ids):
-            for doc_span_id, span in enumerate(document_span_ids):
-                batch_document_span_embeds[doc_id, doc_span_id, :] = torch.cat(
+        batch_document_span_embeds = torch.stack(
+            [
+                torch.stack(
                     [
-                        batch_embeds[doc_id, span.start, :],  # First span token
-                        batch_embeds[doc_id, span.end, :],  # Last span token
-                        torch.sum(
-                            torch.mul(
-                                batch_embeds[doc_id, span.to_consecutive_list(), :],
-                                attns[doc_id, span.to_consecutive_list(), :],
-                            ),
-                            dim=0,
-                        ),  # Attns through spans
+                        torch.cat(
+                            [
+                                batch_embeds[doc_id, span.start, :],  # First span token
+                                batch_embeds[doc_id, span.end, :],  # Last span token
+                                torch.sum(
+                                    torch.mul(
+                                        batch_embeds[doc_id, span.to_consecutive_list(), :],
+                                        attns[doc_id, span.to_consecutive_list(), :],
+                                    ),
+                                    dim=0,
+                                ),  # Attns through spans
+                            ]
+                        )
+                        for span in document_span_ids
                     ]
                 )
+                for doc_id, document_span_ids in enumerate(batch_spans_ids)
+            ]
+        )
 
         # Compute each span's unary mention score
+        # mention_scores = self.score(batch_document_span_embeds)
         mention_scores = self.score(batch_document_span_embeds)
 
         return batch_document_span_embeds, mention_scores
@@ -102,33 +113,46 @@ class PairwiseScore(nn.Module):
         batch_size, document_spans_size, embed_size = list(batch_document_span_embeds.size())
 
         # Create pairs of spans
-        batch_document_span_pairs_embeds = torch.zeros(
-            (batch_size, document_spans_size, document_spans_size, 3 * embed_size)
+        batch_document_span_pairs_embeds = torch.stack(
+            [
+                torch.stack(
+                    [
+                        torch.stack([torch.cat((span_1, span_2, span_1 * span_2)) for span_2 in document])
+                        for span_1 in document
+                    ]
+                )
+                for document in batch_document_span_embeds
+            ]
         )
-        for document_i, document in enumerate(batch_document_span_embeds):
-            for span_i, span_1 in enumerate(document):
-                for span_j, span_2 in enumerate(document):
-                    batch_document_span_pairs_embeds[document_i, span_i, span_j, :] = torch.cat(
-                        (span_1, span_2, span_1 * span_2)
-                    )
 
-        # Score span pairs as coref
+        # # Score span pairs as coref
         span_pairs_scores = self.score(batch_document_span_pairs_embeds)
 
         # Stack mention and span cores scores
-        span_pairs_extended_scores = torch.zeros((batch_size, document_spans_size, document_spans_size, 1))
-        for document_i, (doc_mention_scores, doc_pair_scores) in enumerate(
-            zip(mention_scores, span_pairs_scores)
-        ):
-            for span_i, (span_i_mention_scores, span_i_pair_scores) in enumerate(
-                zip(doc_mention_scores, doc_pair_scores)
-            ):
-                for span_j, (span_j_mention_scores, span_ij_pair_scores) in enumerate(
-                    zip(doc_mention_scores, span_i_pair_scores)
-                ):
-                    span_pairs_extended_scores[document_i, span_i, span_j, :] = torch.mean(
-                        torch.stack([span_i_mention_scores, span_j_mention_scores, span_ij_pair_scores])
-                    )
+        span_pairs_extended_scores = torch.stack(
+            [
+                torch.stack(
+                    [
+                        torch.stack(
+                            [
+                                torch.mean(
+                                    torch.stack(
+                                        [span_i_mention_scores, span_j_mention_scores, span_ij_pair_scores]
+                                    )
+                                )
+                                for span_j_mention_scores, span_ij_pair_scores in zip(
+                                    doc_mention_scores, span_i_pair_scores
+                                )
+                            ]
+                        )
+                        for span_i_mention_scores, span_i_pair_scores in zip(
+                            doc_mention_scores, doc_pair_scores
+                        )
+                    ]
+                )
+                for doc_mention_scores, doc_pair_scores in zip(mention_scores, span_pairs_scores)
+            ]
+        )
 
         return span_pairs_extended_scores
 
@@ -141,13 +165,13 @@ class E2ECR(nn.Module):
         attn_dim = embeds_dim
 
         # Forward and backward passes, avg'd attn over embeddings, span width
-        gi_dim = 3 * embeds_dim  # + distance_dim
+        gi_dim = 3 * embeds_dim
 
         # gi, gj, gi*gj, distance between gi and gj
         gij_dim = gi_dim * 3
 
-        self.score_spans = MentionScore(gi_dim, attn_dim)
-        self.score_pairs = PairwiseScore(gij_dim)
+        self.score_spans = MentionScore(gi_dim, attn_dim).to(CONTEXT["device"])  # type: ignore
+        self.score_pairs = PairwiseScore(gij_dim).to(CONTEXT["device"])  # type: ignore
 
     def forward(self, encoded_docs: torch.Tensor, spans_ids: List[List[TokenRange]]) -> torch.Tensor:
         """
@@ -214,12 +238,12 @@ class Trainer:
         for instances, span_ids, target in tqdm(zip(*data)):
 
             # Compute loss, number gold links found, total gold links
-            loss, accuracy = self.train_doc(instances, span_ids, target)
+            loss, accuracy, precision, recall = self.train_doc(instances, span_ids, target)
 
             # Track stats by document for debugging
             print(
                 epoch,
-                f"| Loss: {loss} '| Accuracy: {accuracy} |",
+                f"| Loss: {loss} | Accuracy: {accuracy} | Precision: {precision} | Recall: {recall}",
             )
             epoch_loss.append(loss)
             epoch_accuracy.append(accuracy)
@@ -230,7 +254,7 @@ class Trainer:
 
     def train_doc(
         self, instances: torch.Tensor, span_ids: List[List[TokenRange]], target: torch.Tensor
-    ) -> Tuple[float, float]:
+    ) -> Tuple[float, float, float, float]:
         """ Compute loss for a forward pass over a document """
 
         # Zero out optimizer gradients
@@ -243,7 +267,17 @@ class Trainer:
         loss = self.loss_fn(probs.view(-1).to(CONTEXT["device"]), target.view(-1).to(CONTEXT["device"]))
 
         # Naive accuracy result
-        accuracy = ((probs > 0.5).float() == target).float().sum() / torch.numel(probs)
+        thresholded_probs = (probs > 0.5).float()
+        accuracy = (thresholded_probs == target.squeeze(-1)).float().sum() / torch.numel(probs)
+
+        # Naive precision result
+        tp = (thresholded_probs * target.squeeze(-1)).sum()
+        fp = (thresholded_probs * (target.squeeze(-1) == 0).float()).sum()
+        precision = 0 if tp == 0 and fp == 0 else tp / (tp + fp)
+
+        # Naive recall result
+        fn = ((probs <= 0.5).float() * target.squeeze(-1)).sum().float().sum()
+        recall = fn / (tp + fn)
 
         # Backpropagate
         loss.backward()
@@ -251,7 +285,7 @@ class Trainer:
         # Step the optimizer
         self.optimizer.step()
 
-        return loss.item(), accuracy
+        return loss.item(), accuracy, precision, recall
 
     def save_model(self, savepath: Path) -> None:
         """ Save model state dictionary """
