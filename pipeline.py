@@ -45,10 +45,10 @@ class OrchidPipeline:
         )
 
     def __call__(self):
-        #try:
+        # try:
         if 1:
             # Load Data
-            sentences = self.data_loader()[:10000]
+            sentences = self.data_loader()[:500]
 
             # Encode
             sentences_texts = [[token.text for token in sent.word_tokens] for sent in sentences]
@@ -97,12 +97,12 @@ class OrchidPipeline:
                     num_epochs=20,
                 )
 
-            #model_out = [
+            # model_out = [
             #   model(doc_based_batch, text_spans_batch)
             #    for doc_based_batch, text_spans_batch in zip(doc_based_batches, text_spans_batches)
-            #]
+            # ]
 
             return PipelineOutput(state=Response.success)
 
-        #except:  # must specify the error type
+        # except:  # must specify the error type
         #   return PipelineOutput(state=Response.fail)

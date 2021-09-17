@@ -45,6 +45,7 @@ class MentionScore(nn.Module):
     def __init__(self, gi_dim: int, attn_dim: int):
         super().__init__()
 
+        self.gi_dim = gi_dim
         self.attention = Score(attn_dim).to(CONTEXT["device"])  # type: ignore
         self.score = Score(gi_dim).to(CONTEXT["device"])  # type: ignore
 
@@ -82,13 +83,16 @@ class MentionScore(nn.Module):
                         )
                         for span in document_span_ids
                     ]
+                    + [
+                        torch.zeros((self.gi_dim))
+                        for _ in range(max(the_highest_span_count - len(document_span_ids), 0))
+                    ]
                 )
                 for doc_id, document_span_ids in enumerate(batch_spans_ids)
             ]
         )
 
         # Compute each span's unary mention score
-        # mention_scores = self.score(batch_document_span_embeds)
         mention_scores = self.score(batch_document_span_embeds)
 
         return batch_document_span_embeds, mention_scores
@@ -251,7 +255,7 @@ class Trainer:
             epoch_accuracy.append(accuracy)
 
         # Step the learning rate decrease scheduler
-        self.scheduler.step()
+        # self.scheduler.step()
         return epoch_loss, epoch_accuracy
 
     def train_doc(
