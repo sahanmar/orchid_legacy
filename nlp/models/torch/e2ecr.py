@@ -238,7 +238,9 @@ class Trainer:
         for instances, span_ids, target in tqdm(zip(*data)):
 
             # Compute loss, number gold links found, total gold links
-            loss, accuracy, precision, recall = self.train_doc(instances, span_ids, target)
+            loss, accuracy, precision, recall = self.train_doc(
+                instances.to(CONTEXT["device"]), span_ids, target.to(CONTEXT["device"])
+            )
 
             # Track stats by document for debugging
             print(
@@ -261,10 +263,10 @@ class Trainer:
         self.optimizer.zero_grad()
 
         # Predict coref probabilites for each span in a document
-        probs = self.model(instances.to(CONTEXT["device"]), span_ids)
+        probs = self.model(instances, span_ids)
 
         # Cross entropy log-likelihood
-        loss = self.loss_fn(probs.view(-1).to(CONTEXT["device"]), target.view(-1).to(CONTEXT["device"]))
+        loss = self.loss_fn(probs.view(-1).to(CONTEXT["device"]), target.view(-1))
 
         # Naive accuracy result
         thresholded_probs = (probs > 0.5).float()

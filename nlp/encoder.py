@@ -69,7 +69,7 @@ class GeneralisedBertEncoder:
             pbe_tokens = self.tokenizer.tokenize(tokens, is_split_into_words=True)
             tokenized = self.tokenizer(
                 tokens, return_tensors=TENSOR_MAPPER[tensors_type.value], is_split_into_words=True
-            )
+            ).to(CONTEXT["device"])
             tensors = self.model(**tokenized)
 
         return {
@@ -93,7 +93,7 @@ class GeneralisedBertEncoder:
             if encoded_sent is None:
                 encoded_sent = self(sentence, tensors_type)
                 cacher.create_cache(hashed_text, encoded_sent)
-            encoded_sentences.append(encoded_sent.to(CONTEXT["device"]))
+            encoded_sentences.append(encoded_sent)
         return encoded_sentences
 
     def get_cached(self, hash: str) -> Optional[Dict[str, Union[Tensor, List[List[int]]]]]:

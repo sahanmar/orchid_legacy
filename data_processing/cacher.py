@@ -4,7 +4,7 @@ import numpy as np
 from pathlib import Path
 from typing import Dict, List, TypeVar, Union, Optional
 
-from torch.tensor import Tensor
+from torch import Tensor
 
 from config.config import CacheCfg
 from utils.util_types import TensorType

@@ -45,10 +45,10 @@ class OrchidPipeline:
         )
 
     def __call__(self):
-        # try:
+        #try:
         if 1:
             # Load Data
-            sentences = self.data_loader()
+            sentences = self.data_loader()[:10000]
 
             # Encode
             sentences_texts = [[token.text for token in sent.word_tokens] for sent in sentences]
@@ -90,19 +90,19 @@ class OrchidPipeline:
                 # Initialize Trainer
                 trainer = Trainer(model)
 
-                # trainer.train(
-                #     train_data=(train_docs, train_span_ids, train_target),
-                #     test_data=(test_docs, test_span_ids, test_target),
-                #     folder_to_save=self.corref_config.training_folder,
-                #     num_epochs=5,
-                # )
+                trainer.train(
+                    train_data=(train_docs, train_span_ids, train_target),
+                    test_data=(test_docs, test_span_ids, test_target),
+                    folder_to_save=self.corref_config.training_folder,
+                    num_epochs=20,
+                )
 
-            model_out = [
-                model(doc_based_batch, text_spans_batch)
-                for doc_based_batch, text_spans_batch in zip(doc_based_batches, text_spans_batches)
-            ]
+            #model_out = [
+            #   model(doc_based_batch, text_spans_batch)
+            #    for doc_based_batch, text_spans_batch in zip(doc_based_batches, text_spans_batches)
+            #]
 
             return PipelineOutput(state=Response.success)
 
-        # except:  # must specify the error type
-        #    return PipelineOutput(state=Response.fail)
+        #except:  # must specify the error type
+        #   return PipelineOutput(state=Response.fail)
