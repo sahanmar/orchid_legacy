@@ -257,8 +257,8 @@ class Trainer:
         self.model.eval()
         test_f1, test_acc, test_prec, test_recall = [], [], [], []
         for test_instances, test_span_ids, test_target in zip(*test_data):
-            test_probs = self.model(test_instances, test_span_ids)
-            f1, acc, prec, recall = get_scores(test_probs, test_target)
+            test_probs = self.model(test_instances.to(CONTEXT["device"], test_span_ids)
+            f1, acc, prec, recall = get_scores(test_probs, test_target.to(CONTEXT["device"]))
             test_f1.append(f1)
             test_acc.append(acc)
             test_prec.append(prec)

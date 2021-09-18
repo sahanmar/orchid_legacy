@@ -45,7 +45,8 @@ class OrchidPipeline:
         )
 
     def __call__(self):
-        try:
+        #try:
+        if 1:
             # Load Data
             sentences = self.data_loader()[:10000]
 
@@ -70,7 +71,9 @@ class OrchidPipeline:
             model = E2ECR(**self.corref_config.params).to(context["device"])
             if torch.cuda.device_count() > 1:
                 print("Let's use", torch.cuda.device_count(), "GPUs!")
-                model = nn.DataParallel(model)
+                model.score_spans.attention = nn.DataParallel(model.score_spans.attention)
+                model.score_spans.score = nn.DataParallel(model.score_spans.score)
+                model.score_pairs.score = nn.DataParallel(model.score_pairs.score)
             print(model)
             if self.corref_config.train:
                 # TODO ADD TESTS!
@@ -101,5 +104,5 @@ class OrchidPipeline:
 
             return PipelineOutput(state=Response.success)
 
-        except:  # must specify the error type
-            return PipelineOutput(state=Response.fail)
+        #except:  # must specify the error type
+        #    return PipelineOutput(state=Response.fail)
