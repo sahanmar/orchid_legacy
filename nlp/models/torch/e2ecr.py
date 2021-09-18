@@ -84,7 +84,7 @@ class MentionScore(nn.Module):
                         for span in document_span_ids
                     ]
                     + [
-                        torch.zeros((self.gi_dim))
+                        torch.zeros((self.gi_dim), requires_grad=True).to(CONTEXT["device"])
                         for _ in range(max(the_highest_span_count - len(document_span_ids), 0))
                     ]
                 )
