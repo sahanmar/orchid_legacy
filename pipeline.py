@@ -1,4 +1,5 @@
 import torch
+import torch.nn as nn
 
 from typing import Optional
 
@@ -67,6 +68,9 @@ class OrchidPipeline:
 
             # Model Initializing, Training, Inferencing
             model = E2ECR(**self.corref_config.params).to(context["device"])
+            if torch.cuda.device_count() > 1:
+                print("Let's use", torch.cuda.device_count(), "GPUs!")
+                model = nn.DataParallel(model)
             print(model)
             if self.corref_config.train:
                 # TODO ADD TESTS!
