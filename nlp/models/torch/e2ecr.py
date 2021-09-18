@@ -235,35 +235,39 @@ class Trainer:
         epoch_loss: List[float] = []
         train_f1: List[float] = []
 
-        for train_instances, train_span_ids, train_target, test_instances, test_span_ids, test_target in tqdm(
-            zip(*train_data, *test_data)
-        ):
+        for train_instances, train_span_ids, train_target in tqdm(zip(*train_data)):
             # Compute loss, number gold links found, total gold links
             metrics = self.train_doc(
                 train_instances.to(CONTEXT["device"]),
                 train_span_ids,
                 train_target.to(CONTEXT["device"]),
-                test_instances.to(CONTEXT["device"]),
-                test_span_ids,
-                test_target.to(CONTEXT["device"]),
             )
-            train_metrics = metrics["train"]
-            test_metrics = metrics["train"]
 
             # Track stats by document for debugging
             print("\n")
             print("TRAINING")
             print(
-                f" Epoch: {epoch} | F1 : {train_metrics[3]} | Loss: {metrics['loss']} | Accuracy: {train_metrics[0]} | Precision: {train_metrics[1]} | Recall: {train_metrics[2]}",
-            )
-
-            print("TESTING")
-            print(
-                f" Epoch: {epoch} | F1 : {test_metrics[3]} | Accuracy: {test_metrics[0]} | Precision: {test_metrics[1]} | Recall: {test_metrics[2]}\n",
+                f" Epoch: {epoch} | F1 : {metrics['f1']} | Loss: {metrics['loss']} | Accuracy: {metrics['accuracy']} | Precision: {metrics['precision']} | Recall: {metrics['recall']}\n",
             )
 
             epoch_loss.append(metrics["loss"])
-            train_f1.append(train_metrics[3])
+            train_f1.append(metrics["f1"])
+
+        # Evaluate model
+        self.model.eval()
+        test_f1, test_acc, test_prec, test_recall = [], [], [], []
+        for test_instances, test_span_ids, test_target in zip(*test_data):
+            test_probs = self.model(test_instances, test_span_ids)
+            f1, acc, prec, recall = get_scores(test_probs, test_target)
+            test_f1.append(f1)
+            test_acc.append(acc)
+            test_prec.append(prec)
+            test_recall.append(recall)
+
+        print("TESTING")
+        print(
+            f" Epoch: {epoch} | F1 : {safe_avg(test_f1)} | Accuracy: {safe_avg(test_acc)} | Precision: {safe_avg(test_prec)} | Recall: {safe_avg(test_recall)}\n",
+        )
 
         # Step the learning rate decrease scheduler
         # self.scheduler.step()
@@ -271,12 +275,9 @@ class Trainer:
 
     def train_doc(
         self,
-        train_instances: torch.Tensor,
-        train_span_ids: List[List[TokenRange]],
-        train_target: torch.Tensor,
-        test_instances: torch.Tensor,
-        test_span_ids: List[List[TokenRange]],
-        test_target: torch.Tensor,
+        instances: torch.Tensor,
+        span_ids: List[List[TokenRange]],
+        target: torch.Tensor,
     ) -> Dict[str, Any]:
         """ Compute loss for a forward pass over a document """
 
@@ -284,12 +285,12 @@ class Trainer:
         self.optimizer.zero_grad()
 
         # Predict coref probabilites for each span in a document
-        train_probs = self.model(train_instances, train_span_ids)
+        probs = self.model(instances, span_ids)
 
         # Cross entropy log-likelihood
-        loss = self.loss_fn(train_probs.view(-1).to(CONTEXT["device"]), train_target.view(-1))
+        loss = self.loss_fn(probs.view(-1).to(CONTEXT["device"]), target.view(-1))
 
-        train_accuracy, train_precision, train_recall, train_f1 = get_scores(train_probs, train_target)
+        accuracy, precision, recall, f1 = get_scores(probs, target)
 
         # Backpropagate
         loss.backward()
@@ -297,17 +298,7 @@ class Trainer:
         # Step the optimizer
         self.optimizer.step()
 
-        # Evaluate model
-        self.model.eval()
-        test_probs = self.model(test_instances, test_span_ids)
-        test_accuracy, test_precision, test_recall, test_f1 = get_scores(test_probs, test_target)
-        self.model.train()
-
-        return {
-            "loss": loss.item(),
-            "train": [train_accuracy, train_precision, train_recall, train_f1],
-            "test": [test_accuracy, test_precision, test_recall, test_f1],
-        }
+        return {"loss": loss.item(), "f1": f1, "accuracy": accuracy, "precision": precision, "recall": recall}
 
     def save_model(self, savepath: Path) -> None:
         """ Save model state dictionary """
@@ -326,12 +317,18 @@ def get_scores(probs: torch.Tensor, target: torch.Tensor) -> Tuple[float, float,
 
     # Naive recall result
     fn = ((probs <= 0.5).float() * target.squeeze(-1)).sum().float().sum()
-    recall = fn / (tp + fn)
+    recall = 0 if tp == 0 and fn == 0 else tp / (tp + fn)
 
     # Naive F1
     f1 = tp / (tp + 1 / 2 * (fp + fn))
 
     return accuracy, precision, recall, f1
+
+
+def safe_avg(data: List[float]) -> float:
+    if not data:
+        return 0.0
+    return sum(data) / len(data)
 
 
 def to_cuda(model: Union[nn.Module, torch.Tensor]):
