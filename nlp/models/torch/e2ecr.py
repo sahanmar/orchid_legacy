@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
+import logging
 
 from typing import Any, List, Tuple, Union, Dict
 
@@ -113,8 +114,6 @@ class PairwiseScore(nn.Module):
         Output: BATCH x DOCUMENT_SPANS x DOCUMENT_SPANS * 1
         """
 
-        batch_size, document_spans_size, embed_size = list(batch_document_span_embeds.size())
-
         # Create pairs of spans
         batch_document_span_pairs_embeds = torch.stack(
             [
@@ -202,6 +201,8 @@ class Trainer:
 
         self.loss_fn = nn.BCELoss()
 
+        self.logger = training_logger()
+
     def train(
         self,
         train_data: Tuple[List[torch.Tensor], List[List[List[TokenRange]]], List[torch.Tensor]],
@@ -213,13 +214,20 @@ class Trainer:
 
         best_f1 = -1.0
 
+        loss_evolution: List[float] = []
+
         for epoch in range(1, num_epochs + 1):
-            _, average_f1 = self.train_epoch(train_data, test_data, epoch)
+            loss, average_f1 = self.train_epoch(train_data, test_data, epoch)
+            loss_evolution.extend(loss)
 
             # Save the model with the highest training f1
             if average_f1 > best_f1:
                 best_f1 = average_f1
                 self.save_model(folder_to_save / "e2ecr_model.pt")
+
+        with open("loss_evolution.txt", "w") as f:
+            for l in loss_evolution:
+                f.write("%s\n" % l)
 
     def train_epoch(
         self,
@@ -244,11 +252,12 @@ class Trainer:
             )
 
             # Track stats by document for debugging
+            training_stats = f" Epoch: {epoch} | F1 : {metrics['f1']} | Loss: {metrics['loss']} | Accuracy: {metrics['accuracy']} | Precision: {metrics['precision']} | Recall: {metrics['recall']}\n"
             print("\n")
             print("TRAINING")
-            print(
-                f" Epoch: {epoch} | F1 : {metrics['f1']} | Loss: {metrics['loss']} | Accuracy: {metrics['accuracy']} | Precision: {metrics['precision']} | Recall: {metrics['recall']}\n",
-            )
+            print(training_stats)
+            self.logger.info("TRAINING")
+            self.logger.info(training_stats)
 
             epoch_loss.append(metrics["loss"])
             train_f1.append(metrics["f1"])
@@ -264,10 +273,11 @@ class Trainer:
             test_prec.append(prec)
             test_recall.append(recall)
 
+        testing_stats = f" Epoch: {epoch} | F1 : {safe_avg(test_f1)} | Accuracy: {safe_avg(test_acc)} | Precision: {safe_avg(test_prec)} | Recall: {safe_avg(test_recall)}\n"
         print("TESTING")
-        print(
-            f" Epoch: {epoch} | F1 : {safe_avg(test_f1)} | Accuracy: {safe_avg(test_acc)} | Precision: {safe_avg(test_prec)} | Recall: {safe_avg(test_recall)}\n",
-        )
+        print(testing_stats)
+        self.logger.info("TESTING")
+        self.logger.info(testing_stats)
 
         # Step the learning rate decrease scheduler
         # self.scheduler.step()
@@ -356,3 +366,13 @@ def create_target_values(
                             targer_values[k, i, j, :] = 1
 
     return targer_values
+
+
+def training_logger() -> logging.Logger:
+    logger = logging.getLogger()
+    fhandler = logging.FileHandler(filename="app.log", mode="a")
+    formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+    fhandler.setFormatter(formatter)
+    logger.addHandler(fhandler)
+    logger.setLevel(logging.DEBUG)
+    return logger
