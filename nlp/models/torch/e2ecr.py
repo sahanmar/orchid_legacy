@@ -92,6 +92,9 @@ class MentionScore(nn.Module):
             ]
         )
 
+        del attns
+        del the_highest_span_count
+
         # Compute each span's unary mention score
         mention_scores = self.score(batch_document_span_embeds)
 
@@ -130,6 +133,8 @@ class PairwiseScore(nn.Module):
         # # Score span pairs as coref
         span_pairs_scores = self.score(batch_document_span_pairs_embeds)
 
+        del batch_document_span_pairs_embeds
+
         # Stack mention and span cores scores
         span_pairs_extended_scores = torch.stack(
             [
@@ -139,7 +144,11 @@ class PairwiseScore(nn.Module):
                             [
                                 torch.mean(
                                     torch.stack(
-                                        [span_i_mention_scores, span_j_mention_scores, span_ij_pair_scores]
+                                        [
+                                            span_i_mention_scores,
+                                            span_j_mention_scores,
+                                            span_ij_pair_scores,
+                                        ]
                                     )
                                 )
                                 for span_j_mention_scores, span_ij_pair_scores in zip(
@@ -156,11 +165,19 @@ class PairwiseScore(nn.Module):
             ]
         )
 
+        del span_pairs_scores
+
         return span_pairs_extended_scores
 
 
 class E2ECR(nn.Module):
-    def __init__(self, embeds_dim: int, hidden_dim: int, distance_dim: int = 20, speaker_dim: int = 20):
+    def __init__(
+        self,
+        embeds_dim: int,
+        hidden_dim: int,
+        distance_dim: int = 20,
+        speaker_dim: int = 20,
+    ):
         super().__init__()
 
         # Forward and backward pass over the document
@@ -185,6 +202,9 @@ class E2ECR(nn.Module):
 
         # Get pairwise scores for each span combo
         coref_scores = self.score_pairs(g_i, mention_scores)
+
+        del g_i
+        del mention_scores
 
         return torch.clamp(coref_scores, min=0, max=1)
 
@@ -244,23 +264,27 @@ class Trainer:
         train_f1: List[float] = []
 
         for train_instances, train_span_ids, train_target in tqdm(zip(*train_data)):
-            # Compute loss, number gold links found, total gold links
-            metrics = self.train_doc(
-                train_instances.to(CONTEXT["device"]),
-                train_span_ids,
-                train_target.to(CONTEXT["device"]),
-            )
 
-            # Track stats by document for debugging
-            training_stats = f" Epoch: {epoch} | F1 : {metrics['f1']} | Loss: {metrics['loss']} | Accuracy: {metrics['accuracy']} | Precision: {metrics['precision']} | Recall: {metrics['recall']}\n"
-            print("\n")
-            print("TRAINING")
-            print(training_stats)
-            self.logger.info("TRAINING")
-            self.logger.info(training_stats)
+            try:
+                # Compute loss, number gold links found, total gold links
+                metrics = self.train_doc(
+                    train_instances.to(CONTEXT["device"]),
+                    train_span_ids,
+                    train_target.to(CONTEXT["device"]),
+                )
 
-            epoch_loss.append(metrics["loss"])
-            train_f1.append(metrics["f1"])
+                # Track stats by document for debugging
+                training_stats = f" Epoch: {epoch} | F1 : {metrics['f1']} | Loss: {metrics['loss']} | Accuracy: {metrics['accuracy']} | Precision: {metrics['precision']} | Recall: {metrics['recall']}\n"
+                print("\n")
+                print("TRAINING")
+                print(training_stats)
+                self.logger.info("TRAINING")
+                self.logger.info(training_stats)
+
+                epoch_loss.append(metrics["loss"])
+                train_f1.append(metrics["f1"])
+            except RuntimeError:
+                self.logger.info("OOM error for document with id...")
 
         # Evaluate model
         self.model.eval()
@@ -308,7 +332,13 @@ class Trainer:
         # Step the optimizer
         self.optimizer.step()
 
-        return {"loss": loss.item(), "f1": f1, "accuracy": accuracy, "precision": precision, "recall": recall}
+        return {
+            "loss": loss.item(),
+            "f1": f1,
+            "accuracy": accuracy,
+            "precision": precision,
+            "recall": recall,
+        }
 
     def save_model(self, savepath: Path) -> None:
         """ Save model state dictionary """
