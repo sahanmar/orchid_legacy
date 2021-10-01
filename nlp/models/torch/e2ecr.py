@@ -263,7 +263,7 @@ class Trainer:
         epoch_loss: List[float] = []
         train_f1: List[float] = []
 
-        for train_instances, train_span_ids, train_target in tqdm(zip(*train_data)):
+        for i, (train_instances, train_span_ids, train_target) in tqdm(enumerate(zip(*train_data))):
 
             try:
                 # Compute loss, number gold links found, total gold links
@@ -285,6 +285,7 @@ class Trainer:
                 train_f1.append(metrics["f1"])
             except RuntimeError:
                 self.logger.info("OOM error for document with id...")
+                print("OOM error for document with id {i}...")
 
         # Evaluate model
         self.model.eval()
