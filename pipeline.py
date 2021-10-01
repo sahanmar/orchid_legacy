@@ -48,7 +48,7 @@ class OrchidPipeline:
         #try:
         if 1:
             # Load Data
-            sentences = self.data_loader()[:10000]
+            sentences = self.data_loader()[:8000]
 
             # Encode
             sentences_texts = [[token.text for token in sent.word_tokens] for sent in sentences]
@@ -99,7 +99,7 @@ class OrchidPipeline:
                     train_data=(train_docs, train_span_ids, train_target),
                     test_data=(test_docs, test_span_ids, test_target),
                     folder_to_save=self.corref_config.training_folder,
-                    num_epochs=100,
+                    num_epochs=50,
                 )
 
             return PipelineOutput(state=Response.success)
