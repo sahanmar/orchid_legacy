@@ -42,10 +42,7 @@ class ConllParser:
         return ConllParser(path, coref_to_leave)
 
     def add_corref_mutable(
-        self,
-        corref_dict: Dict[int, List[TokenRange]],
-        unprocessed_corref: str,
-        i_token: int,
+        self, corref_dict: Dict[int, List[TokenRange]], unprocessed_corref: str, i_token: int
     ) -> None:
         for corref in unprocessed_corref.split("|"):
             cr_label, cr_type = self.parse_cr(corref)
@@ -54,7 +51,7 @@ class ConllParser:
             if cr_type == CorrefTokenType.full:
                 corref_dict[cr_label].append(TokenRange(start=i_token, end=i_token + 1))
             elif cr_type == CorrefTokenType.start:
-                corref_dict[cr_label].append(TokenRange(start=i_token, end=i_token))
+                corref_dict[cr_label].append(TokenRange(start=i_token, end=i_token + 1))
             else:
                 corref_dict[cr_label][-1].end = i_token + 1
 
