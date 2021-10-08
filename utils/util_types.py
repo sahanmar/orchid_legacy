@@ -54,7 +54,9 @@ class TokenRange:
 
     @staticmethod
     def from_list(list_of_consecutive_elements: List[int]) -> "TokenRange":
-        return TokenRange(list_of_consecutive_elements[0], list_of_consecutive_elements[-1])
+        return TokenRange(
+            list_of_consecutive_elements[0], list_of_consecutive_elements[-1] + 1
+        )  # Add one index next to work with list notation
 
 
 @dataclass
