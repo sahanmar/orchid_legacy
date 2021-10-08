@@ -45,8 +45,7 @@ class OrchidPipeline:
         )
 
     def __call__(self):
-        # try:
-        if 1:
+        try:
             # Load Data
             sentences = self.data_loader()
 
@@ -95,14 +94,14 @@ class OrchidPipeline:
                 # Initialize Trainer
                 trainer = Trainer(model)
 
-                trainer.train(
-                    train_data=(train_docs, train_span_ids, train_target),
-                    test_data=(test_docs, test_span_ids, test_target),
-                    folder_to_save=self.corref_config.training_folder,
-                    num_epochs=5,
-                )
+                # trainer.train(
+                #     train_data=(train_docs, train_span_ids, train_target),
+                #     test_data=(test_docs, test_span_ids, test_target),
+                #     folder_to_save=self.corref_config.training_folder,
+                #     num_epochs=5,
+                # )
 
             return PipelineOutput(state=Response.success)
 
-        # except:  # must specify the error type
-        #    return PipelineOutput(state=Response.fail)
+        except:  # must specify the error type
+            return PipelineOutput(state=Response.fail)
