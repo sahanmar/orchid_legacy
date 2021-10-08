@@ -39,6 +39,7 @@ class TokenRange:
     def __init__(self, start: int, end: int):
         self.start = start
         self.end = end  # including this token
+        assert self.start < self.end
 
     def __repr__(self):
         return f"({self.start},{self.end})"
@@ -54,7 +55,9 @@ class TokenRange:
 
     @staticmethod
     def from_list(list_of_consecutive_elements: List[int]) -> "TokenRange":
-        return TokenRange(list_of_consecutive_elements[0], list_of_consecutive_elements[-1])
+        return TokenRange(
+            list_of_consecutive_elements[0], list_of_consecutive_elements[-1] + 1
+        )  # Add one index next to work with list notation
 
 
 @dataclass

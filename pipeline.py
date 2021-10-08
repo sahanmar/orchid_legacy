@@ -1,5 +1,7 @@
-from re import I
-from typing import List, Optional, Union, Dict
+import torch
+import torch.nn as nn
+
+from typing import Optional
 
 from nlp.encoder import (
     GeneralisedBertEncoder,
@@ -16,6 +18,8 @@ from nlp.models.torch.e2ecr import E2ECR, Trainer, create_target_values
 from nlp.models import batch_split_idx
 
 from utils.util_types import PipelineOutput, Response
+
+context = {"device": torch.device("cuda" if torch.cuda.is_available() else "cpu"), "dtype": torch.float32}
 
 
 class OrchidPipeline:
@@ -41,7 +45,6 @@ class OrchidPipeline:
         )
 
     def __call__(self):
-
         try:
             # Load Data
             sentences = self.data_loader()
@@ -64,7 +67,13 @@ class OrchidPipeline:
             ]
 
             # Model Initializing, Training, Inferencing
-            model = E2ECR(**self.corref_config.params)
+            model = E2ECR(**self.corref_config.params).to(context["device"])
+            if torch.cuda.device_count() > 1:
+                print("Let's use", torch.cuda.device_count(), "GPUs!")
+                model.score_spans.attention = nn.DataParallel(model.score_spans.attention)
+                model.score_spans.score = nn.DataParallel(model.score_spans.score)
+                model.score_pairs.score = nn.DataParallel(model.score_pairs.score)
+            print(model)
             if self.corref_config.train:
                 # TODO ADD TESTS!
                 target_values_batches = [
@@ -84,17 +93,13 @@ class OrchidPipeline:
                 )
                 # Initialize Trainer
                 trainer = Trainer(model)
+
                 # trainer.train(
                 #     train_data=(train_docs, train_span_ids, train_target),
                 #     test_data=(test_docs, test_span_ids, test_target),
                 #     folder_to_save=self.corref_config.training_folder,
-                #     num_epochs=10,
+                #     num_epochs=5,
                 # )
-
-            model_out = [
-                model(doc_based_batch, text_spans_batch)
-                for doc_based_batch, text_spans_batch in zip(doc_based_batches, text_spans_batches)
-            ]
 
             return PipelineOutput(state=Response.success)
 

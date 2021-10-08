@@ -1,19 +1,19 @@
 {
     "data": {
-        "train": "data/english_gold_conll/train/train.english.v4_gold_conll",
-        "test": "data/english_gold_conll/test/test.english.v4_auto_conll",
-        "dev": "data/english_gold_conll/dev/dev.english.v4_gold_conll"
+        "train": "/home/sahanmar/Datasets/data/english_gold_conll/train/train.english.v4_gold_conll",
+        "test": "/home/sahanmar/Datasets/data/english_gold_conll/test/test.english.v4_auto_conll",
+        "dev": "/home/sahanmar/Datasets/data/english_gold_conll/dev/dev.english.v4_gold_conll"
     },
     "model": {
-        "dev_mode": true,
-        "train": false,
+        "dev_mode": false,
+        "train": true,
         "params": {
             "embeds_dim": 768,
             "hidden_dim": 20,
             "distance_dim": 20
         },
-        "batch_size": 32,
-        "split_value": 0.5,
+        "batch_size": 1,
+        "split_value": 0.9,
         "training_folder": "training_folder",
         "enable_cuda": true
     },
@@ -27,7 +27,7 @@
         "encoding_type": "SpanBERT_base_cased"
     },
     "cache": {
-        "path": "cache/",
+        "path": "/home/sahanmar/cache/",
         "tensor_type": "pt"
     }
 }

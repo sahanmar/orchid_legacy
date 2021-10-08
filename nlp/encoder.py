@@ -15,6 +15,11 @@ from utils.util_types import ConllSentence
 
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 
+CONTEXT = {
+    "device": torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu"),
+    "dtype": torch.float32,
+}
+
 INCONSISTENCY_TOKENS = {"'"}
 
 ENCODER_MAPPER = {
@@ -33,7 +38,7 @@ Tensor = TypeVar("Tensor", torch.Tensor, np.ndarray)
 
 class GeneralisedBertEncoder:
     def __init__(self, model: AutoModel, tokenizer: AutoTokenizer):
-        self.model = model
+        self.model = model.to(CONTEXT["device"])
         self.tokenizer = tokenizer
 
     @staticmethod
@@ -60,17 +65,33 @@ class GeneralisedBertEncoder:
         with torch.no_grad():
             if tensors_type.value not in TENSOR_MAPPER:
                 out_of_menu_exit(text="tensor type")
-
-            pbe_tokens = self.tokenizer.tokenize(tokens, is_split_into_words=True)
-            tokenized = self.tokenizer(
-                tokens, return_tensors=TENSOR_MAPPER[tensors_type.value], is_split_into_words=True
+            bpe_tokens = [self.tokenizer(token)["input_ids"][1:-1] for token in tokens]
+            flatten_pbe_tokens = list(chain.from_iterable(bpe_tokens))
+            torch_pbe_tokens = torch.unsqueeze(
+                torch.tensor([101] + flatten_pbe_tokens + [102]).to(CONTEXT["device"]),  # type: ignore
+                dim=0,
             )
-            tensors = self.model(**tokenized)
+            tensors = self.model(
+                input_ids=torch_pbe_tokens,
+                attention_mask=torch.ones((1, len(torch_pbe_tokens))).to(CONTEXT["device"], dtype=torch.long), # type: ignore
+                token_type_ids=torch.zeros((1, len(torch_pbe_tokens))).to( # type: ignore
+                    CONTEXT["device"], dtype=torch.long
+                ),
+            )
+
+        original_tokens = []
+        counter = 0
+        for token in bpe_tokens:
+            bpe_tokens = []
+            for _ in token:
+                bpe_tokens.append(counter)
+                counter += 1
+            original_tokens.append(bpe_tokens)
 
         return {
-            "input_ids": tokenized["input_ids"],
-            "tensors": tensors["last_hidden_state"],
-            "original_tokens": self._bpe_to_original_tokens_indices(pbe_tokens),
+            "input_ids": flatten_pbe_tokens,
+            "tensors": tensors["last_hidden_state"][:, 1:-1, :],
+            "original_tokens": original_tokens,
         }
 
     def encode_many(
@@ -93,28 +114,6 @@ class GeneralisedBertEncoder:
 
     def get_cached(self, hash: str) -> Optional[Dict[str, Union[Tensor, List[List[int]]]]]:
         return None
-
-    @staticmethod
-    def _bpe_to_original_tokens_indices(pbe_tokens: List[str]) -> List[List[int]]:
-        """
-        Please keep in mind that this method works for BERT based models only
-        """
-        if not pbe_tokens:
-            return []
-        tokens: List[List[int]] = [[0]]
-        token_to_extend = 0
-        for i, pbe_token in enumerate(pbe_tokens[1:], start=1):
-            # TODO FIX INCONSISTENCIES
-            # Pay attention to inconsistency tokens. There are still inconsistencies
-            # but they are minore and do not influence the final result.
-            # E.g. original_tokens = [city, 's] -> bpe_to_original = [city', s]
-            if pbe_token.startswith("##") or pbe_token in INCONSISTENCY_TOKENS:
-                tokens[token_to_extend].append(i)
-                continue
-            token_to_extend += 1
-            tokens.append([i])
-
-        return tokens
 
 
 def bpe_to_original_embeddings(
