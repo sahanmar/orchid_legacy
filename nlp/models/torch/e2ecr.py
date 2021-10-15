@@ -144,11 +144,7 @@ class PairwiseScore(nn.Module):
                             [
                                 torch.mean(
                                     torch.stack(
-                                        [
-                                            span_i_mention_scores,
-                                            span_j_mention_scores,
-                                            span_ij_pair_scores,
-                                        ]
+                                        [span_i_mention_scores, span_j_mention_scores, span_ij_pair_scores]
                                     )
                                 )
                                 for span_j_mention_scores, span_ij_pair_scores in zip(
@@ -171,13 +167,7 @@ class PairwiseScore(nn.Module):
 
 
 class E2ECR(nn.Module):
-    def __init__(
-        self,
-        embeds_dim: int,
-        hidden_dim: int,
-        distance_dim: int = 20,
-        speaker_dim: int = 20,
-    ):
+    def __init__(self, embeds_dim: int, hidden_dim: int, distance_dim: int = 20, speaker_dim: int = 20):
         super().__init__()
 
         # Forward and backward pass over the document
@@ -268,9 +258,7 @@ class Trainer:
             try:
                 # Compute loss, number gold links found, total gold links
                 metrics = self.train_doc(
-                    train_instances.to(CONTEXT["device"]),
-                    train_span_ids,
-                    train_target.to(CONTEXT["device"]),
+                    train_instances.to(CONTEXT["device"]), train_span_ids, train_target.to(CONTEXT["device"])
                 )
 
                 # Track stats by document for debugging
@@ -309,10 +297,7 @@ class Trainer:
         return epoch_loss, sum(train_f1) / len(train_f1)
 
     def train_doc(
-        self,
-        instances: torch.Tensor,
-        span_ids: List[List[TokenRange]],
-        target: torch.Tensor,
+        self, instances: torch.Tensor, span_ids: List[List[TokenRange]], target: torch.Tensor
     ) -> Dict[str, Any]:
         """ Compute loss for a forward pass over a document """
 
@@ -333,13 +318,7 @@ class Trainer:
         # Step the optimizer
         self.optimizer.step()
 
-        return {
-            "loss": loss.item(),
-            "f1": f1,
-            "accuracy": accuracy,
-            "precision": precision,
-            "recall": recall,
-        }
+        return {"loss": loss.item(), "f1": f1, "accuracy": accuracy, "precision": precision, "recall": recall}
 
     def save_model(self, savepath: Path) -> None:
         """ Save model state dictionary """
@@ -349,19 +328,19 @@ class Trainer:
 def get_scores(probs: torch.Tensor, target: torch.Tensor) -> Tuple[float, float, float, float]:
     # Naive accuracy result
     thresholded_probs = (probs > 0.5).float()
-    accuracy = (thresholded_probs == target.squeeze(-1)).float().sum() / torch.numel(probs)
+    accuracy = ((thresholded_probs == target.squeeze(-1)).float().sum() / torch.numel(probs)).item()
 
     # Naive precision result
     tp = (thresholded_probs * target.squeeze(-1)).sum()
     fp = (thresholded_probs * (target.squeeze(-1) == 0).float()).sum()
-    precision = 0 if tp == 0 and fp == 0 else tp / (tp + fp)
+    precision = 0.0 if tp == 0 and fp == 0 else (tp / (tp + fp)).item()
 
     # Naive recall result
     fn = ((probs <= 0.5).float() * target.squeeze(-1)).sum().float().sum()
-    recall = 0 if tp == 0 and fn == 0 else tp / (tp + fn)
+    recall = 0.0 if tp == 0 and fn == 0 else (tp / (tp + fn)).item()
 
     # Naive F1
-    f1 = tp / (tp + 1 / 2 * (fp + fn))
+    f1 = (tp / (tp + 1 / 2 * (fp + fn))).item()
 
     return accuracy, precision, recall, f1
 

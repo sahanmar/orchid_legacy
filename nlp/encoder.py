@@ -67,14 +67,15 @@ class GeneralisedBertEncoder:
                 out_of_menu_exit(text="tensor type")
             bpe_tokens = [self.tokenizer(token)["input_ids"][1:-1] for token in tokens]
             flatten_pbe_tokens = list(chain.from_iterable(bpe_tokens))
-            torch_pbe_tokens = torch.unsqueeze(
-                torch.tensor([101] + flatten_pbe_tokens + [102]).to(CONTEXT["device"]),  # type: ignore
-                dim=0,
-            )
+            torch_bpe_tokens: torch.Tensor = torch.tensor(  # type: ignore
+                [101] + flatten_pbe_tokens + [102]
+            ).to(CONTEXT["device"])
             tensors = self.model(
-                input_ids=torch_pbe_tokens,
-                attention_mask=torch.ones((1, len(torch_pbe_tokens))).to(CONTEXT["device"], dtype=torch.long), # type: ignore
-                token_type_ids=torch.zeros((1, len(torch_pbe_tokens))).to( # type: ignore
+                input_ids=torch.unsqueeze(torch_bpe_tokens, dim=0),
+                attention_mask=torch.ones((1, len(torch_bpe_tokens))).to(  # type: ignore
+                    CONTEXT["device"], dtype=torch.long
+                ),
+                token_type_ids=torch.zeros((1, len(torch_bpe_tokens))).to(  # type: ignore
                     CONTEXT["device"], dtype=torch.long
                 ),
             )
@@ -89,7 +90,7 @@ class GeneralisedBertEncoder:
             original_tokens.append(bpe_tokens)
 
         return {
-            "input_ids": flatten_pbe_tokens,
+            "input_ids": torch_bpe_tokens if tensors_type == TensorType.torch else flatten_pbe_tokens,
             "tensors": tensors["last_hidden_state"][:, 1:-1, :],
             "original_tokens": original_tokens,
         }
@@ -100,20 +101,16 @@ class GeneralisedBertEncoder:
         tensors_type: TensorType = TensorType.torch,
         cacher: Optional[Cacher] = None,
     ) -> List[Dict[str, Union[torch.Tensor, np.ndarray, List[List[int]]]]]:
-        encoded_sentences: List[Dict[str, Union[torch.Tensor, np.ndarray, List[List[int]]]]] = []
         if cacher is None:
             return [self(sentence, tensors_type) for sentence in tqdm(tokenized_sentences)]
         for i, sentence in tqdm(enumerate(tokenized_sentences)):
             hashed_text = naive_sha1_hash(i, sentence)
-            encoded_sent = cacher.get_from_cache(hashed_text)  # type: ignore
-            if encoded_sent is None:
-                encoded_sent = self(sentence, tensors_type)
-                cacher.create_cache(hashed_text, encoded_sent)
-            encoded_sentences.append(encoded_sent)
-        return encoded_sentences
-
-    def get_cached(self, hash: str) -> Optional[Dict[str, Union[Tensor, List[List[int]]]]]:
-        return None
+            encoded_sent = self(sentence, tensors_type)
+            cacher.create_cache(hashed_text, encoded_sent)
+        return [
+            cacher.get_from_cache(naive_sha1_hash(i, sentence))  # type: ignore
+            for i, sentence in tqdm(enumerate(tokenized_sentences))
+        ]
 
 
 def bpe_to_original_embeddings(
