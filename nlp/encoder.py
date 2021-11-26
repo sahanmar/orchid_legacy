@@ -4,7 +4,7 @@ import hashlib
 
 from typing import Dict, List, TypeVar, Union, Optional, Tuple
 from itertools import groupby, chain
-from transformers import AutoTokenizer, AutoModel  # type: ignore
+from transformers import AutoTokenizer, BertPreTrainedModel, AutoConfig, AutoModel  # type: ignore
 from tqdm import tqdm
 
 from config.config import EncodingCfg
@@ -13,7 +13,7 @@ from utils.util_types import EncodingType, TensorType, TokenRange
 from utils.utils import out_of_menu_exit
 from utils.util_types import ConllSentence
 
-from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
+from torch.nn.utils.rnn import pad_packed_sequence
 
 CONTEXT = {
     "device": torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu"),
@@ -36,10 +36,12 @@ TENSOR_MAPPER = {
 Tensor = TypeVar("Tensor", torch.Tensor, np.ndarray)
 
 
-class GeneralisedBertEncoder:
-    def __init__(self, model: AutoModel, tokenizer: AutoTokenizer):
+class GeneralisedBertEncoder(BertPreTrainedModel):
+    def __init__(self, model: AutoModel, tokenizer: AutoTokenizer, config: AutoConfig):
+        super().__init__(config)
         self.model = model.to(CONTEXT["device"])
         self.tokenizer = tokenizer
+        self.config = config
 
     @staticmethod
     def from_config(config: EncodingCfg) -> "GeneralisedBertEncoder":
@@ -49,14 +51,23 @@ class GeneralisedBertEncoder:
 
         encoder = ENCODER_MAPPER[config.encoding_type.value]
 
+        bert_config = AutoConfig.from_pretrained(encoder)
         model = AutoModel.from_pretrained(encoder)
         tokenizer = AutoTokenizer.from_pretrained(encoder)
 
-        return GeneralisedBertEncoder(model, tokenizer)
+        return GeneralisedBertEncoder(model, tokenizer, bert_config)
+
+    # rewrite call method
+    # fine tune transformer
+    # input: input_ids
+
+    # encode many will just tokenize
 
     def __call__(
         self, tokens: List[str], tensors_type: TensorType = TensorType.torch
-    ) -> Dict[str, Union[torch.Tensor, np.ndarray, List[List[int]]]]:
+    ) -> Dict[
+        str, Union[torch.Tensor, List[List[int]]]
+    ]:  # Dict[str, Union[torch.Tensor, np.ndarray, List[List[int]]]]:
 
         """
         This method works with tokenized text. This is done based on OntoNotes input.
@@ -71,13 +82,13 @@ class GeneralisedBertEncoder:
                 torch.tensor([101] + flatten_pbe_tokens + [102]).to(CONTEXT["device"]),  # type: ignore
                 dim=0,
             )
-            tensors = self.model(
-                input_ids=torch_pbe_tokens,
-                attention_mask=torch.ones((1, len(torch_pbe_tokens))).to(CONTEXT["device"], dtype=torch.long), # type: ignore
-                token_type_ids=torch.zeros((1, len(torch_pbe_tokens))).to( # type: ignore
-                    CONTEXT["device"], dtype=torch.long
-                ),
-            )
+            # tensors = self.model(
+            #     input_ids=torch_pbe_tokens,
+            #     attention_mask=torch.ones((1, len(torch_pbe_tokens))).to(CONTEXT["device"], dtype=torch.long),  # type: ignore
+            #     token_type_ids=torch.zeros((1, len(torch_pbe_tokens))).to(  # type: ignore
+            #         CONTEXT["device"], dtype=torch.long
+            #     ),
+            # )
 
         original_tokens = []
         counter = 0
@@ -88,9 +99,11 @@ class GeneralisedBertEncoder:
                 counter += 1
             original_tokens.append(bpe_tokens)
 
+        # Keep in mind that there is sentence beggining and sentence end tokens which
+        # are not present in original tokens. Remove them after creating embeddings
         return {
-            "input_ids": flatten_pbe_tokens,
-            "tensors": tensors["last_hidden_state"][:, 1:-1, :],
+            "input_ids": [101] + flatten_pbe_tokens + [102],
+            # "tensors": tensors["last_hidden_state"][:, 1:-1, :],
             "original_tokens": original_tokens,
         }
 
@@ -167,24 +180,30 @@ def bpe_to_original_embeddings_many(
     raise TypeError("Smth is wrong with types...")
 
 
-def to_doc_based_batches(
+def to_doc_tensors(
     tensors_2_batch: List[torch.Tensor], doc_id_array: List[int], batch_size: int
 ) -> List[torch.Tensor]:
     doc_id_w_sent_id = [(doc_i, sent_i) for sent_i, doc_i in enumerate(doc_id_array)]
     sliced_sent_ids = [list(group[1]) for group in groupby(doc_id_w_sent_id, key=lambda x: x[0])]
 
     doc_tensors = [
-        torch_custom_flatten(
-            [tensors_2_batch[sent_id] for _, sent_id in sent_ids],
-            [tensors_2_batch[sent_id].size()[1] for _, sent_id in sent_ids],
-        )
-        for sent_ids in sliced_sent_ids
+        torch.Tensor([tensors_2_batch[sent_id] for _, sent_id in sent_ids]) for sent_ids in sliced_sent_ids
     ]
-    lengths = [t.size()[1] for t in doc_tensors]
-    return [
-        torch_custom_padding(doc_tensors[i_start:i_end], lengths[i_start:i_end])
-        for i_start, i_end in zip(*get_batch_idxs(len(doc_tensors), batch_size))
-    ]
+
+    return doc_tensors
+
+    # doc_tensors = [
+    #     torch_custom_flatten(
+    #         [tensors_2_batch[sent_id] for _, sent_id in sent_ids],
+    #         [tensors_2_batch[sent_id].size()[1] for _, sent_id in sent_ids],
+    #     )
+    #     for sent_ids in sliced_sent_ids
+    # ]
+    # lengths = [t.size()[1] for t in doc_tensors]
+    # return [
+    #     torch_custom_padding(doc_tensors[i_start:i_end], lengths[i_start:i_end])
+    #     for i_start, i_end in zip(*get_batch_idxs(len(doc_tensors), batch_size))
+    # ]
 
 
 def torch_custom_flatten(tensors_2_flatten: List[torch.Tensor], lengths: List[int]) -> torch.Tensor:

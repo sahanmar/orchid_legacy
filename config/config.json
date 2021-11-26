@@ -10,7 +10,10 @@
         "params": {
             "embeds_dim": 768,
             "hidden_dim": 20,
-            "distance_dim": 20
+            "distance_dim": 20,
+            "max_span_length": 1000,
+            "top_lambda": 0.4,
+            "dropout_prob": 0.3
         },
         "batch_size": 1,
         "split_value": 0.9,

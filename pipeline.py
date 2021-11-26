@@ -6,15 +6,16 @@ from typing import Optional
 from nlp.encoder import (
     GeneralisedBertEncoder,
     bpe_to_original_embeddings_many,
-    to_doc_based_batches,
     text_based_span_and_corref_tokens_shift,
     get_batch_idxs,
+    to_doc_tensors,
 )
 from data_processing.conll_parses import ConllParser
 from data_processing.cacher import Cacher
 from config.config import Config, ModelCfg
 
-from nlp.models.torch.e2ecr import E2ECR, Trainer, create_target_values
+# from nlp.models.torch.e2ecr import E2ECR, Trainer, create_target_values
+from nlp.models.torch.s2ecr import S2E
 from nlp.models import batch_split_idx
 
 from utils.util_types import PipelineOutput, Response
@@ -45,7 +46,8 @@ class OrchidPipeline:
         )
 
     def __call__(self):
-        try:
+        # try:
+        if 1:
             # Load Data
             sentences = self.data_loader()
 
@@ -55,53 +57,56 @@ class OrchidPipeline:
             text_spans, grouped_shift_correfs = text_based_span_and_corref_tokens_shift(sentences, doc_ids)
 
             encoded_tokens_per_sentences = self.encoder.encode_many(sentences_texts, cacher=self.cacher)
-            orig_encoded_tokens_per_sentences = bpe_to_original_embeddings_many(encoded_tokens_per_sentences)
+            bpe_per_sentences = [sent["input_ids"] for sent in encoded_tokens_per_sentences]
 
             # Batch the data
-            doc_based_batches = to_doc_based_batches(
-                orig_encoded_tokens_per_sentences, doc_ids, self.corref_config.batch_size
+            doc_based_tensors = to_doc_tensors(
+                bpe_per_sentences,
+                doc_ids,
+                self.corref_config.batch_size,
             )
-            text_spans_batches = [
-                text_spans[i_start:i_end]
-                for i_start, i_end in zip(*get_batch_idxs(len(text_spans), self.corref_config.batch_size))
-            ]
+
+            import IPython
+
+            IPython.embed()
 
             # Model Initializing, Training, Inferencing
-            model = E2ECR(**self.corref_config.params).to(context["device"])
-            if torch.cuda.device_count() > 1:
-                print("Let's use", torch.cuda.device_count(), "GPUs!")
-                model.score_spans.attention = nn.DataParallel(model.score_spans.attention)
-                model.score_spans.score = nn.DataParallel(model.score_spans.score)
-                model.score_pairs.score = nn.DataParallel(model.score_pairs.score)
+            # model = E2ECR(**self.corref_config.params).to(context["device"])
+            # if torch.cuda.device_count() > 1:
+            #     print("Let's use", torch.cuda.device_count(), "GPUs!")
+            #     model.score_spans.attention = nn.DataParallel(model.score_spans.attention)
+            #     model.score_spans.score = nn.DataParallel(model.score_spans.score)
+            #     model.score_pairs.score = nn.DataParallel(model.score_pairs.score)
+            model = S2E(**self.corref_config.params).to(context["device"])
             print(model)
-            if self.corref_config.train:
-                # TODO ADD TESTS!
-                target_values_batches = [
-                    create_target_values(text_spans[i_start:i_end], grouped_shift_correfs[i_start:i_end])
-                    for i_start, i_end in zip(*get_batch_idxs(len(text_spans), self.corref_config.batch_size))
-                ]
-                split_inx = batch_split_idx(len(doc_based_batches), self.corref_config.split_value)
-                train_docs, train_span_ids, train_target = (
-                    doc_based_batches[:split_inx],
-                    text_spans_batches[:split_inx],
-                    target_values_batches[:split_inx],
-                )
-                test_docs, test_span_ids, test_target = (
-                    doc_based_batches[split_inx:],
-                    text_spans_batches[split_inx:],
-                    target_values_batches[split_inx:],
-                )
-                # Initialize Trainer
-                trainer = Trainer(model)
+            # if self.corref_config.train:
+            #     # TODO ADD TESTS!
+            #     target_values_batches = [
+            #         create_target_values(text_spans[i_start:i_end], grouped_shift_correfs[i_start:i_end])
+            #         for i_start, i_end in zip(*get_batch_idxs(len(text_spans), self.corref_config.batch_size))
+            #     ]
+            #     split_inx = batch_split_idx(len(doc_based_batches), self.corref_config.split_value)
+            #     train_docs, train_span_ids, train_target = (
+            #         doc_based_batches[:split_inx],
+            #         text_spans_batches[:split_inx],
+            #         target_values_batches[:split_inx],
+            #     )
+            #     test_docs, test_span_ids, test_target = (
+            #         doc_based_batches[split_inx:],
+            #         text_spans_batches[split_inx:],
+            #         target_values_batches[split_inx:],
+            #     )
+            #     # Initialize Trainer
+            #     trainer = Trainer(model)
 
-                # trainer.train(
-                #     train_data=(train_docs, train_span_ids, train_target),
-                #     test_data=(test_docs, test_span_ids, test_target),
-                #     folder_to_save=self.corref_config.training_folder,
-                #     num_epochs=5,
-                # )
+            # trainer.train(
+            #     train_data=(train_docs, train_span_ids, train_target),
+            #     test_data=(test_docs, test_span_ids, test_target),
+            #     folder_to_save=self.corref_config.training_folder,
+            #     num_epochs=5,
+            # )
 
             return PipelineOutput(state=Response.success)
 
-        except:  # must specify the error type
-            return PipelineOutput(state=Response.fail)
+        # except:  # must specify the error type
+        #     return PipelineOutput(state=Response.fail)

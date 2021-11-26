@@ -35,7 +35,7 @@ class Cacher:
         tensor_dir_path = instance_dir_path / str(self.tensor_type.value)
         mkdir_if_not_exist(tensor_dir_path)
         self.write_tensors(tensor_dir_path / "input_ids", encoded_instance["input_ids"])
-        self.write_tensors(tensor_dir_path / "tensors", encoded_instance["tensors"])
+        # self.write_tensors(tensor_dir_path / "tensors", encoded_instance["tensors"])
         self.write_original_tokens_ids(
             instance_dir_path / "original_tokens.txt", encoded_instance["original_tokens"]  # type: ignore
         )
@@ -47,12 +47,12 @@ class Cacher:
         instance_dir_path = self.path / hash
         tensor_dir_path = instance_dir_path / str(self.tensor_type.value)
         input_ids = self.load_tensor(tensor_dir_path / "input_ids")  # type: ignore
-        tensors = self.load_tensor(tensor_dir_path / "tensors")  # type: ignore
+        # tensors = self.load_tensor(tensor_dir_path / "tensors")  # type: ignore
         return {
             "input_ids": input_ids.to(
                 CONTEXT["device"] if isinstance(input_ids, torch.Tensor) else input_ids
             ),
-            "tensors": tensors.to(CONTEXT["device"] if isinstance(tensors, torch.Tensor) else tensors),
+            # "tensors": tensors.to(CONTEXT["device"] if isinstance(tensors, torch.Tensor) else tensors),
             "original_tokens": self.load_original_tokens_ids(instance_dir_path / "original_tokens.txt"),  # type: ignore
         }
 
