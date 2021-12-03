@@ -4,8 +4,9 @@ import hashlib
 
 from typing import Dict, List, TypeVar, Union, Optional, Tuple
 from itertools import groupby, chain
-from transformers import AutoTokenizer, AutoModel  # type: ignore
+from transformers import AutoTokenizer, AutoModel, AutoConfig  # type: ignore
 from tqdm import tqdm
+from transformers.models import bert
 
 from config.config import EncodingCfg
 from data_processing.cacher import Cacher
@@ -37,9 +38,10 @@ Tensor = TypeVar("Tensor", torch.Tensor, np.ndarray)
 
 
 class GeneralisedBertEncoder:
-    def __init__(self, model: AutoModel, tokenizer: AutoTokenizer):
+    def __init__(self, model: AutoModel, tokenizer: AutoTokenizer, config: AutoConfig):
         self.model = model.to(CONTEXT["device"])
         self.tokenizer = tokenizer
+        self.config = config
 
     @staticmethod
     def from_config(config: EncodingCfg) -> "GeneralisedBertEncoder":
@@ -51,8 +53,9 @@ class GeneralisedBertEncoder:
 
         model = AutoModel.from_pretrained(encoder)
         tokenizer = AutoTokenizer.from_pretrained(encoder)
+        bert_config = AutoConfig.from_pretrained(encoder)
 
-        return GeneralisedBertEncoder(model, tokenizer)
+        return GeneralisedBertEncoder(model, tokenizer, bert_config)
 
     def __call__(
         self, tokens: List[str], tensors_type: TensorType = TensorType.torch
@@ -73,8 +76,8 @@ class GeneralisedBertEncoder:
             )
             tensors = self.model(
                 input_ids=torch_pbe_tokens,
-                attention_mask=torch.ones((1, len(torch_pbe_tokens))).to(CONTEXT["device"], dtype=torch.long), # type: ignore
-                token_type_ids=torch.zeros((1, len(torch_pbe_tokens))).to( # type: ignore
+                attention_mask=torch.ones((1, len(torch_pbe_tokens))).to(CONTEXT["device"], dtype=torch.long),  # type: ignore
+                token_type_ids=torch.zeros((1, len(torch_pbe_tokens))).to(  # type: ignore
                     CONTEXT["device"], dtype=torch.long
                 ),
             )
