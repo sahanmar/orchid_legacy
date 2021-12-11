@@ -18,7 +18,21 @@
         },
         "training": {
             "split_value": 0.9,
-            "training_folder": "training_folder"
+            "training_folder": "training_folder",
+            "training_epochs": 130,
+            "head_learning_rate": 0.0003,
+            "weight_decay": 0.01,
+            "learning_rate": 0.00005,
+            "warmup_steps": 5600,
+            "adam_beta1": 0.9,
+            "adam_beta2": 0.98,
+            "amp": false,
+            "fp16_opt_level": "01",
+            "local_rank": 0,
+            "gradient_accumulation_steps": 1,
+            "seed": 42,
+            "logging_steps": 500,
+            "do_eval": true
         },
         "enable_cuda": false
     },
