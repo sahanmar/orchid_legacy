@@ -9,12 +9,17 @@
         "train": true,
         "params": {
             "embeds_dim": 768,
-            "hidden_dim": 20,
-            "distance_dim": 20
+            "max_span_length": 1000,
+            "top_lambda": 0.4,
+            "dropout_prob": 0.3,
+            "ffnn_size": 0,
+            "normalise_loss": false,
+            "batch_size": 1
         },
-        "batch_size": 1,
-        "split_value": 0.5,
-        "training_folder": "training_folder",
+        "training": {
+            "split_value": 0.9,
+            "training_folder": "training_folder"
+        },
         "enable_cuda": false
     },
     "text": {

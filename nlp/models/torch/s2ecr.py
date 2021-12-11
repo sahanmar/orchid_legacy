@@ -8,6 +8,7 @@ from nlp.models.common import (
     mask_tensor,
 )
 from nlp.encoder import GeneralisedBertEncoder
+from config.config import ParametersCfg
 
 
 class FullyConnectedLayer(Module):
@@ -40,48 +41,50 @@ class S2ECR(BertPreTrainedModel):
         top_lambda: float,
         ffnn_size: int,
         dropout_prob: float,
+        normalise_loss: bool,
         encoder: GeneralisedBertEncoder,
-        normalise_loss: bool = False,
     ):
+
         super().__init__(encoder.config)
         self.embeds_dim = embeds_dim
         self.max_span_length = max_span_length
         self.top_lambda = top_lambda
         self.ffnn_size = ffnn_size
         self.do_mlps = self.ffnn_size > 0
-        self.ffnn_size = self.ffnn_size if self.do_mlps else embeds_dim
+        self.ffnn_size = self.ffnn_size if self.do_mlps else self.embeds_dim
         self.normalise_loss = normalise_loss
+        self.dropout_prob = dropout_prob
 
         self.encoder = encoder
 
         self.start_mention_mlp = (
-            FullyConnectedLayer(encoder.config, embeds_dim, self.ffnn_size, dropout_prob)
+            FullyConnectedLayer(encoder.config, self.embeds_dim, self.ffnn_size, self.dropout_prob)
             if self.do_mlps
             else None
         )
         self.end_mention_mlp = (
-            FullyConnectedLayer(encoder.config, embeds_dim, self.ffnn_size, dropout_prob)
+            FullyConnectedLayer(encoder.config, self.embeds_dim, self.ffnn_size, self.dropout_prob)
             if self.do_mlps
             else None
         )
         self.start_coref_mlp = (
-            FullyConnectedLayer(encoder.config, embeds_dim, self.ffnn_size, dropout_prob)
+            FullyConnectedLayer(encoder.config, self.embeds_dim, self.ffnn_size, self.dropout_prob)
             if self.do_mlps
             else None
         )
         self.end_coref_mlp = (
-            FullyConnectedLayer(encoder.config, embeds_dim, self.ffnn_size, dropout_prob)
+            FullyConnectedLayer(encoder.config, self.embeds_dim, self.ffnn_size, self.dropout_prob)
             if self.do_mlps
             else None
         )
 
         self.start_coref_mlp = (
-            FullyConnectedLayer(encoder.config, embeds_dim, self.ffnn_size, dropout_prob)
+            FullyConnectedLayer(encoder.config, self.embeds_dim, self.ffnn_size, self.dropout_prob)
             if self.do_mlps
             else None
         )
         self.end_coref_mlp = (
-            FullyConnectedLayer(encoder.config, embeds_dim, self.ffnn_size, dropout_prob)
+            FullyConnectedLayer(encoder.config, self.embeds_dim, self.ffnn_size, self.dropout_prob)
             if self.do_mlps
             else None
         )
@@ -96,6 +99,18 @@ class S2ECR(BertPreTrainedModel):
         self.antecedent_e2s_classifier = Linear(self.ffnn_size, self.ffnn_size)
 
         self.init_weights()
+
+    @staticmethod
+    def from_config(config: ParametersCfg, encoder: GeneralisedBertEncoder) -> "S2ECR":
+        return S2ECR(
+            embeds_dim=config.embeds_dim,
+            max_span_length=config.max_span_length,
+            top_lambda=config.top_lambda,
+            ffnn_size=config.ffnn_size,
+            dropout_prob=config.dropout_prob,
+            normalise_loss=config.normalise_loss,
+            encoder=encoder,
+        )
 
     def _get_span_mask(self, batch_size, k, max_k):
         """
