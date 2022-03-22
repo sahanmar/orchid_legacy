@@ -15,7 +15,7 @@ def cache_embeds(data_loader, encoder, cacher):
 
 
 def main():
-	config = Config.load_config(Path("config/config.json"))
+	config = Config.from_path(Path("config/config.json"))
 
 	data_loader = ConllParser.from_config(config)
 	encoder = GeneralisedBertEncoder.from_config(config.encoding)

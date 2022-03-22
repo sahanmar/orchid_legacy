@@ -1,13 +1,23 @@
 import json
 import sys
-
 from dataclasses import dataclass
-from typing import Dict, List, cast, Set, Any
 from pathlib import Path
+from typing import Dict, List, cast, Set, Any
 
-from torch.functional import split
-
+from utils.env import get_env_configuration, resolve_env
+from utils.log import get_stream_logger
 from utils.util_types import EncodingType, TensorType, Optional
+
+_logger = get_stream_logger('config')
+
+# Environment-based configuration
+env = resolve_env()
+__shared_env_path = Path(__file__).resolve().parents[1].joinpath(f'.env.{env}')
+__secret_env_path = Path(__file__).resolve().parents[1].joinpath(f'.env.secret')
+env_config = get_env_configuration(
+    path_shared=__shared_env_path,
+    path_secret=__secret_env_path if __secret_env_path.exists() and __secret_env_path.is_file() else None
+)
 
 VALID_TENSOR_TYPES = {"pt": TensorType.torch, "tf": TensorType.tensorFlow, "np": TensorType.numpy}
 
@@ -19,8 +29,13 @@ class DataPaths:
     dev: Path
 
     @staticmethod
-    def load_config(cfg: Dict[str, str]) -> "DataPaths":
-        return DataPaths(**{k: Path(v) for k, v in cfg.items()})
+    def from_dict(cfg: Dict[str, str]) -> "DataPaths":
+        return DataPaths(
+            **{
+                k: v if v.is_absolute() else Path(__file__).resolve().parents[1].joinpath(v)
+                for k, v in map(lambda kv: (kv[0], Path(kv[1])), cfg.items())
+            }
+        )
 
 
 @dataclass(frozen=True)
@@ -84,7 +99,7 @@ class ModelCfg:
     enable_cuda: bool
 
     @staticmethod
-    def load_config(cfg: Dict[str, Any]) -> "ModelCfg":
+    def from_dict(cfg: Dict[str, Any]) -> "ModelCfg":
         return ModelCfg(
             cfg["dev_mode"],
             cfg["train"],
@@ -99,8 +114,7 @@ class EncodingCfg:
     encoding_type: EncodingType
 
     @staticmethod
-    def load_config(cfg: Dict[str, str]) -> "EncodingCfg":
-
+    def from_dict(cfg: Dict[str, str]) -> "EncodingCfg":
         mapper = {"SpanBERT_base_cased": EncodingType.SpanBERT_base_cased}
 
         return EncodingCfg(encoding_type=mapper[cfg["encoding_type"]])
@@ -112,7 +126,7 @@ class CacheCfg:
     tensor_type: TensorType
 
     @staticmethod
-    def load_config(cfg: Dict[str, str]) -> Optional["CacheCfg"]:
+    def from_dict(cfg: Dict[str, str]) -> Optional["CacheCfg"]:
         if not cfg:
             return None
         return CacheCfg(Path(cfg["path"]), VALID_TENSOR_TYPES.get(cfg["tensor_type"], TensorType.torch))
@@ -120,11 +134,11 @@ class CacheCfg:
 
 @dataclass(frozen=True)
 class TextCfg:
-    correference_tags: Set[str]
+    coreference_tags: Set[str]
 
     @staticmethod
-    def load_config(cfg: Dict[str, List[str]]):
-        return TextCfg(set(cfg.get("correference_tags", set())))
+    def from_dict(cfg: Dict[str, List[str]]):
+        return TextCfg(set(cfg.get("coreference_tags", set())))
 
 
 @dataclass(frozen=True)
@@ -136,21 +150,36 @@ class Config:
     text: TextCfg
 
     @staticmethod
-    def load_config(config_path: Path) -> "Config":
-        if not config_path.is_file():
-            print(f"The path '{config_path}' is not a file")
+    def _load_from_json(path: Path) -> Dict[str, Any]:
+        if path is None or not path.is_file():
+            _logger.error(f"\"{path}\" is not a file")
             sys.exit()
-        with open(config_path, "r") as f:
-            cfg = json.load(f)
+        with open(path, "r") as f:
+            data = json.load(f)
+            return data
+
+    @classmethod
+    def from_path(cls, config_path: Path) -> "Config":
+        cfg = cls._load_from_json(path=config_path)
+        if env != 'test':
+            _logger.info(f'Reading secret_configuration')
+            cfg_secret = cls._load_from_json(
+                path=cast(Path, env_config.get('SECRET_CONFIG_PATH'))
+            )
+            cfg = cfg.update(cfg_secret)
+        else:
+            _logger.debug('Ignoring secret configuration')
+
+        # Attempt reading data paths from environment variables
         return Config(
             **cast(
                 Dict[str, Any],  # type: ignore
                 {
-                    "data_path": DataPaths.load_config(cfg["data"]),
-                    "model": ModelCfg.load_config(cfg["model"]),
-                    "encoding": EncodingCfg.load_config(cfg["encoding"]),
-                    "cache": CacheCfg.load_config(cfg["cache"]),
-                    "text": TextCfg.load_config(cfg["text"]),
+                    "data_path": DataPaths.from_dict(cfg["data"]),
+                    "model": ModelCfg.from_dict(cfg["model"]),
+                    "encoding": EncodingCfg.from_dict(cfg["encoding"]),
+                    "cache": CacheCfg.from_dict(cfg["cache"]),
+                    "text": TextCfg.from_dict(cfg["text"]),
                 },
             )
         )

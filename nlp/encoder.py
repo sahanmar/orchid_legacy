@@ -43,6 +43,13 @@ class GeneralisedBertEncoder:
         self.tokenizer = tokenizer
         self.config = config
 
+    def __repr__(self) -> str:
+        return f'{self.__class__.__name__}' \
+               f'(' \
+               f'model={self.model.__class__.__name__},' \
+               f'tokenizer={self.tokenizer.__class__.__name__}' \
+               f')'
+
     @staticmethod
     def from_config(config: EncodingCfg) -> "GeneralisedBertEncoder":
 
@@ -222,6 +229,7 @@ def naive_sha1_hash(index: int, text: List[str]) -> str:
 def text_based_span_and_corref_tokens_shift(
     text: List[ConllSentence], doc_ids: List[int]
 ) -> Tuple[List[List[TokenRange]], List[Dict[int, List[TokenRange]]]]:
+    # TODO: doc-based global token ids for coref labels
     text_spans = []
     shift_correfs = []
     doc_id_w_sent_id = [(doc_i, sent_i) for sent_i, doc_i in enumerate(doc_ids)]
@@ -232,7 +240,7 @@ def text_based_span_and_corref_tokens_shift(
         sentence_lengths.insert(0, 0)
         sentence_spans = [list(chain.from_iterable(sent.spans.values())) for sent in doc_sents]
         sentence_correfs = [
-            [(corref, label) for label, correfs in sent.correferences.items() for corref in correfs]
+            [(corref, label) for label, correfs in sent.coreferences.items() for corref in correfs]
             for sent in doc_sents
         ]
         text_spans.append(

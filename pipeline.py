@@ -28,26 +28,25 @@ class OrchidPipeline:
         self,
         data_loader: ConllParser,
         encoder: GeneralisedBertEncoder,
-        corref_config: ModelCfg,
+        coref_config: ModelCfg,
         cacher: Optional[Cacher],
     ):
         self.data_loader = data_loader
         self.encoder = encoder
-        self.corref_config = corref_config
+        self.coref_config = coref_config
         self.cacher = cacher
 
     @staticmethod
     def from_config(config: Config) -> "OrchidPipeline":
         return OrchidPipeline(
-            ConllParser.from_config(config),
-            GeneralisedBertEncoder.from_config(config.encoding),
-            config.model,
-            Cacher.from_config(config.cache) if config.cache is not None else None,
+            data_loader=ConllParser.from_config(config),
+            encoder=GeneralisedBertEncoder.from_config(config.encoding),
+            coref_config=config.model,
+            cacher=Cacher.from_config(config.cache) if config.cache is not None else None,
         )
 
     def __call__(self):
-        # try:
-        if 1:
+        try:
             # Load Data
             sentences = self.data_loader()
 
@@ -61,7 +60,7 @@ class OrchidPipeline:
 
             # Batch the data
             doc_based_batches = to_doc_based_batches(
-                orig_encoded_tokens_per_sentences, doc_ids, self.corref_config.params.batch_size
+                orig_encoded_tokens_per_sentences, doc_ids, self.coref_config.params.batch_size
             )
             # text_spans_batches = [
             #     text_spans[i_start:i_end]
@@ -70,7 +69,7 @@ class OrchidPipeline:
 
             # Model Initializing, Training, Inferencing
             model = S2ECR.from_config(
-                config=self.corref_config.params,
+                config=self.coref_config.params,
                 encoder=self.encoder,
             ).to(context["device"])
             if torch.cuda.device_count() > 1:
@@ -84,13 +83,13 @@ class OrchidPipeline:
 
             model_out = model.forward(
                 encoded_doc=doc_based_batches[0],
-                attention_mask=torch.ones((self.corref_config.params.batch_size, seq_len)),
+                attention_mask=torch.ones((self.coref_config.params.batch_size, seq_len)),
                 return_all_outputs=True,
             )
 
-            import IPython
-
-            IPython.embed()
+            # import IPython
+            #
+            # IPython.embed()
             # model = E2ECR(**self.corref_config.params).to(context["device"])
             # if torch.cuda.device_count() > 1:
             #     print("Let's use", torch.cuda.device_count(), "GPUs!")
@@ -127,5 +126,5 @@ class OrchidPipeline:
 
             return PipelineOutput(state=Response.success)
 
-        # except:  # must specify the error type
-        #     return PipelineOutput(state=Response.fail)
+        except Exception as ex:  # must specify the error type
+            return PipelineOutput(state=Response.fail)

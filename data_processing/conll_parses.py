@@ -1,4 +1,5 @@
 import re
+from typing import cast
 
 from pathlib import Path
 from typing import Optional, Set, Tuple, List, Dict
@@ -22,12 +23,18 @@ class ConllParser:
         texts = self.split_file_2_texts(self.path)
 
         parsed_sentences: List[ConllSentence] = []
-        doc_i = 0
         for doc_i, text in enumerate(texts):
             for sentence in text:
                 parsed_sentences.append(self.process_sentence(sentence, doc_i))
 
         return parsed_sentences
+
+    def __repr__(self) -> str:
+        return f'{self.__class__.__name__}' \
+               f'(' \
+               f'path=\"{str(self.path)}\",' \
+               f'coref_to_leave={str(self.coref_to_leave)}' \
+               f')'
 
     @staticmethod
     def from_config(config: Config) -> "ConllParser":
@@ -38,27 +45,27 @@ class ConllParser:
             if config.model.train
             else config.data_path.test
         )
-        coref_to_leave = config.text.correference_tags
+        coref_to_leave = config.text.coreference_tags
         return ConllParser(path, coref_to_leave)
 
-    def add_corref_mutable(
-        self, corref_dict: Dict[int, List[TokenRange]], unprocessed_corref: str, i_token: int
+    def add_coref_mutable(
+        self, coref_dict: Dict[int, List[TokenRange]], unprocessed_corref: str, i_token: int
     ) -> None:
-        for corref in unprocessed_corref.split("|"):
-            cr_label, cr_type = self.parse_cr(corref)
-            if cr_label not in corref_dict:
-                corref_dict[cr_label] = []
+        for coref in unprocessed_corref.split("|"):
+            cr_label, cr_type = self.parse_cr(coref)
+            if cr_label not in coref_dict:
+                coref_dict[cr_label] = []
             if cr_type == CorrefTokenType.full:
-                corref_dict[cr_label].append(TokenRange(start=i_token, end=i_token + 1))
+                coref_dict[cr_label].append(TokenRange(start=i_token, end=i_token + 1))
             elif cr_type == CorrefTokenType.start:
-                corref_dict[cr_label].append(TokenRange(start=i_token, end=i_token + 1))
+                coref_dict[cr_label].append(TokenRange(start=i_token, end=i_token + 1))
             else:
-                corref_dict[cr_label][-1].end = i_token + 1
+                coref_dict[cr_label][-1].end = i_token + 1
 
     def process_sentence(self, sentence: List[str], document_index: int) -> ConllSentence:
 
         tokens: List[Morphology] = []
-        correferences: Dict[int, List[TokenRange]] = {}
+        coreferences: Dict[int, List[TokenRange]] = {}
         spans: List[Tuple[List[int], str]] = []
 
         num_of_spans = 0
@@ -77,14 +84,14 @@ class ConllParser:
                 _,
                 speaker,
                 *rest,
-            ) = per_token_annotations.split()
+            ) = cast(Tuple[str, ...], per_token_annotations.split())
             i_token = int(i_token_str)
 
             cr = rest[-1]
             tokens.append(Morphology(text=token, part_of_speech=pos, lemma=lemma if lemma != "-" else token))
 
             if not cr.startswith("-"):
-                self.add_corref_mutable(correferences, cr, i_token)
+                self.add_coref_mutable(coreferences, cr, i_token)
 
             # Extract all spans
 
@@ -116,7 +123,7 @@ class ConllParser:
             document_index=document_index,
             word_tokens=tokens,
             speaker=speaker,
-            correferences=correferences,
+            coreferences=coreferences,
             spans=grouped_spans,
         )
 

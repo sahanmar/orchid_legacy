@@ -1,6 +1,6 @@
 {
     "data": {
-        "train": "test_stages/conll_dev_test",
+        "train": "test_stages/resources/conll_dev_test",
         "test": "",
         "dev": ""
     },
@@ -37,7 +37,7 @@
         "enable_cuda": false
     },
     "text": {
-        "correference_tags": [
+        "coreference_tags": [
             "NML",
             "NP"
         ]

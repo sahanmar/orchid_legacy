@@ -73,7 +73,7 @@ class ConllSentence:
     document_index: int
     word_tokens: List[Morphology]
     speaker: str
-    correferences: Dict[int, List[TokenRange]]
+    coreferences: Dict[int, List[TokenRange]]
     spans: Dict[str, List[TokenRange]]
 
 

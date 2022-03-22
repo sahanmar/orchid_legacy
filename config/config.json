@@ -37,7 +37,7 @@
         "enable_cuda": true
     },
     "text": {
-        "correference_tags": [
+        "coreference_tags": [
             "NML",
             "NP"
         ]
