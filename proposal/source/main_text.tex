@@ -49,16 +49,21 @@ Still, models of these types were far from perfect, as they provided one with co
 Context-dependent representations with flexible vocabularies became available thanks to the introduction of the Transformer architecture \cite{transformer-Vaswani2017} applied on the vocabulary formed not only by words but also by character n-grams constructed as meaningful parts of words.  
 The power of the Transformer architecture lies in its encoding and decoding capability improved by the self-attention mechanism which learns to put stress on parts of text sequences. 
 This gave birth to a lot of transformer-based language models such as the Bidirectional Encoder Representations from Transformers (BERT) \cite{bert-Devlin2019}, its fine-tuned variations \cite{albert-Lan2020,robarta-Liu2019} and further models \cite{gpt-Radford2018,use-Cer2018}. 
-To this date, SpanBERT \cite{cr-Joshi2019} has proven to be the most efficient architecture for coreference resolution. 
-Its crucial difference from the standard BERT model is that it learns to predict the content of masked spans of text, taking into account their beginnings and endings, omitting the ability of the base BERT model to predict foregoing  sentences, whereas BERT learns to predict the following sentence for each preceding one and attempts to infer individual masked tokens. 
+To this date, SpanBERT \cite{cr-Joshi2019} has proven to be one of the most efficient architecture for coreference resolution. 
+Its crucial difference from the standard BERT model is that it learns to predict the content of masked spans of text, taking into account their beginnings and endings, omitting the ability of the base BERT model to predict foregoing  sentences, whereas BERT learns to predict the following sentence for each preceding one and attempts to infer individual masked tokens.
+Another model worthy of mention is a Longformer whose architecture is based on transformers capable of processing long documents up to 4096 tokens~\cite{Beltagy2020Longformer}.
 
 The first end-to-end coreference resolution model was introduced in \cite{cr-Lee17}. Its crucial difference from its predecessors was that it did not require preprocessing in the form of syntactic parsing or rule-based mention detection, since the model is able to learn mention dependencies on its own to a forerunner-outperforming extent. 
 The main idea of the model is to learn to score pairs of textual spans in such a way that takes into account, firstly, if these spans are entity mentions and, secondly, whether the pair is of type antecedent-descendant in terms of coreference.
 Span representations are provided by the NLU model of choice. 
-The goal is to be able to assign to each span an antecedent span. The current state-of-the-art approach \cite{cr-Joshi2019} utilizes the same structure on top of SpanBERT. 
+The goal is to be able to assign to each span an antecedent span. 
+Among the state-of-the-art approaches is \cite{cr-Joshi2019} which utilizes the same structure on top of SpanBERT. 
 One of the crucial drawbacks of the scoring approach is the choice of spans: sizes of relevant spans can be different so a constant width of the window may not always be the right choice; spans can either overlap or be disjoint; if they overlap, the value of how large the overlap is also becomes a hyperparameter. 
 In addition to that, the number of scoring procedures is quadratic in complexity: each span has to be scored against every its counterpart. 
 If the length of the document is large, the memory needed to store all entity mentions may become an issue (in \cite{cr-Xia2020} authors propose an incremental structure for the CR model which needs a lot less memory for the price of a slight decrease in performance).
+While previous models are able to achieve decent results, their memory footprint is significant. 
+The authors of~\cite{Kirstain2021S2E} bypassed the need to create span representations, relying on a combination of bilinear functions applied on endpoint token representations. 
+In addition to that, the new model is built on top of a Longformer encoder capable of processing long documents. 
 
 The CR scoring model takes as input sequences of high-dimensional word-vectors which were produced by multiple consecutive nonlinear mappings. For that reason, one can assume the resulting language-representing structure is highly nonlinear and noisy. 
 In such cases, nonlinear dimensionality reduction helps to preserve crucial information, e.g. probability distribution \cite{dr-VanderMaaten2014} or structure of neighborhood-based local metric spaces \cite{dr-McInnes2018}, while reducing the dimension and noisiness of the space. 
@@ -77,7 +82,7 @@ We aim to utilize the knowledge of these aforementioned fields and adapt it to t
 For languages other than English, the state of the art for the CR is arguably even farther behind. 
 For example, coreference resolution for Czech was attempted on the PCEDT dataset \cite{pcedt-Hajic2012} in \cite{cr-cz-Novak17}; however, the overall performance of the approach does not reach the mark of 0.7 in terms of F-score. 
 In addition to that, no transformer-based NLU model was available at the time. 
-We aim to address this in our research, as SpanBERT demonstrates superior performance to other neural supervised techniques.
+We aim to address this in our research, as SpanBERT and Longformers demonstrate superior performance to other neural supervised techniques.
 %}
 
 % ================================================
@@ -98,8 +103,8 @@ We aim to address this in our research, as SpanBERT demonstrates superior perfor
 
 
 \begin{description}
-	\item [T1.1 PyTorch \& TensorFlow CR Model (Belov, Sahan)] Further enhancement of the state-of-the-art models in PyTorch (\textit{Marko Sahan}) and TensorFlow 2 (\textit{Vladislav Belov}) to support cluster computation optimization and generalization for various text representation mechanisms. The existing implementation of the state-of-the-art model is outdated and is not suited for modern environments, since it utilizes the Static-Computational-Graph approach. However, modern technologies (PyTorch and TensorFlow 2) employ Dynamic Computational Graphs \cite{computationalgraph-Neubig2017}.  
-	\item [T1.2 Evaluation Environment (Belov, Sahan)] The task of coreference resolution is complex and its performance is evaluated with numerous metrics \cite{muc-Vilain1995,b3-Bagga1998,ceaf-Luo2005}, as the standardly used F1 score \cite{f1-Chen2006} does not embrace all aspects of the discriminative power of features. Therefore, creation of an environment which is capable of assessing and analyzing the quality of the resulting models in a meaningful and comparable way is crucial.
+	\item [T1.1 Enhanced State-of-the-Art CR Models (Belov, Sahan)] Further enhancement of the state-of-the-art models in PyTorch to support cluster computation optimization and generalization for various text representation mechanisms. The existing available implementations are not flexible for experimentation. They are focused on a specific architecture with specific encoding models; some even utilize the Static-Computational-Graph approach. However, modern technologies, e.g., PyTorch and TensorFlow 2, employ Dynamic Computational Graphs \cite{computationalgraph-Neubig2017}. 
+	\item [T1.2 Evaluation Environment (Belov, Sahan)] The task of coreference resolution is complex and its performance is evaluated with numerous metrics \cite{muc-Vilain1995,b3-Bagga1998,ceaf-Luo2005}, as the standardly used F1 score \cite{f1-Chen2006} does not embrace all aspects of the discriminative power of features. Therefore, creation of an environment which is capable of assessing and analyzing the quality of the resulting models in a meaningful and comparable way is crucial. The initial structure of the platform is already arranged together with a functioning prototype of~\cite{Kirstain2021S2E}. 
 \end{description}
 
 
@@ -165,7 +170,7 @@ Radek Mařík will manage the project. He supervises both Ph.D. students. He wil
 
 \item [Ing. Marko Sahan,] a Ph.D. candidate, has focused on active learning for text classification with enhanced uncertainty representation in his diploma thesis~\cite{Sahan2020}. The significant contribution of his work has resulted in the paper accepted at the ECNLPIR 2021 conference~\cite{Sahan2021}. He will explore mainly coreference resolution improvements using advanced uncertainty representations.
 
-\item [Ing. Vladislav Belov,] a Ph.D. candidate, has studied manifold learning and relation mining~\cite{Belov2020}. He will focus on the influence of nonlinear dimensionality reduction and structural relations (CRF, entity-aware attention) to coreference resolution.
+\item [Ing. Vladislav Belov,] a Ph.D. candidate, has studied Manifold Learning, Relation Mining, and Kernel Density Estimation~\cite{Belov2020}. His work resulted in contributions to CIIS 2021~\cite{Belov2021ML} and ACAI2021~\cite{Belov2021KDE}. He will focus on the influence of nonlinear dimensionality reduction and structural relations (CRF, entity-aware attention) to coreference resolution.
 
 \end{description}
 
