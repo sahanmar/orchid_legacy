@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Optional, Set, Tuple, List, Dict
 from itertools import groupby
 
-from utils.util_types import ConllSentence, TokenRange, Morphology, CorrefTokenType
+from utils.types import ConllSentence, TokenRange, Morphology, CorefTokenType
 from config.config import Config
 
 
@@ -55,9 +55,9 @@ class ConllParser:
             cr_label, cr_type = self.parse_cr(coref)
             if cr_label not in coref_dict:
                 coref_dict[cr_label] = []
-            if cr_type == CorrefTokenType.full:
+            if cr_type == CorefTokenType.full:
                 coref_dict[cr_label].append(TokenRange(start=i_token, end=i_token + 1))
-            elif cr_type == CorrefTokenType.start:
+            elif cr_type == CorefTokenType.start:
                 coref_dict[cr_label].append(TokenRange(start=i_token, end=i_token + 1))
             else:
                 coref_dict[cr_label][-1].end = i_token + 1
@@ -151,9 +151,9 @@ class ConllParser:
         return texts
 
     @staticmethod
-    def parse_cr(text: str) -> Tuple[int, CorrefTokenType]:
+    def parse_cr(text: str) -> Tuple[int, CorefTokenType]:
         if text.startswith("("):
             if text.endswith(")"):
-                return int(text[1:-1]), CorrefTokenType.full
-            return int(text[1:]), CorrefTokenType.start
-        return int(text[:-1]), CorrefTokenType.end
+                return int(text[1:-1]), CorefTokenType.full
+            return int(text[1:]), CorefTokenType.start
+        return int(text[:-1]), CorefTokenType.end

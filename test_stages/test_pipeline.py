@@ -3,7 +3,7 @@ from pathlib import Path
 
 from config.config import Config, DataPaths, env_config
 from pipeline import OrchidPipeline
-from utils.util_types import Response
+from utils.types import Response
 
 
 class PipelineTest(unittest.TestCase):

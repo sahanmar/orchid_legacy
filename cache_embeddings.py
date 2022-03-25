@@ -2,10 +2,10 @@ from pathlib import Path
 
 from config.config import Config, DataPaths
 from pipeline import OrchidPipeline
-from utils.util_types import Response
+from utils.types import Response
 from data_processing.cacher import Cacher
 from data_processing.conll_parses import ConllParser
-from nlp.encoder import GeneralisedBertEncoder
+from nlp.encoder import GeneralisedBERTEncoder
 
 
 def cache_embeds(data_loader, encoder, cacher):
@@ -18,7 +18,7 @@ def main():
 	config = Config.from_path(Path("config/config.json"))
 
 	data_loader = ConllParser.from_config(config)
-	encoder = GeneralisedBertEncoder.from_config(config.encoding)
+	encoder = GeneralisedBERTEncoder.from_config(config.encoding)
 	if config.cache is None:
 		raise ValueError("Bro... No chacher defined!")
 	cacher = Cacher.from_config(config.cache)

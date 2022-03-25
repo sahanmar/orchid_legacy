@@ -1,15 +1,6 @@
 import torch
-import json
-import os
-from datetime import datetime
-from time import time
-import torch
 
-NULL_ID_FOR_COREF = 0
-
-
-def flatten_list_of_lists(lst):
-    return [elem for sublst in lst for elem in sublst]
+from config.config import NULL_ID_FOR_COREF
 
 
 def extract_clusters(gold_clusters):

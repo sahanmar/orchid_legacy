@@ -1,58 +1,38 @@
 import json
-import logging
 import random
+from pathlib import Path
+from typing import (
+    Tuple,
+    Optional
+)
+
 import numpy as np
 import torch
-from torch.functional import split
-from torch.utils.data import DataLoader
+from torch.utils.data.dataloader import DataLoader
 from torch.utils.tensorboard import SummaryWriter
-from coref_bucket_batch_sampler import BucketBatchSampler
 from tqdm import tqdm, trange
-from pathlib import Path
-
 from transformers import AdamW, get_linear_schedule_with_warmup
-from config.config import TrainingCgf
-from nlp.models.torch.s2ecr import S2ECR
 
-logger = logging.getLogger(__name__)
+from config import TrainingConfig, Context
+from nlp.models.torch.s2ecr import S2EModel
+from utils.log import get_stream_logger
+
+logger = get_stream_logger(__name__)
 
 
 class Trainer:
     def __init__(
-        self,
-        split_value: float,
-        training_folder: Path,
-        training_epochs: int,
-        head_learning_rate: float,
-        warmup_steps: int,
-        amp: bool,
-        local_rank: int,
-        gradient_accumulation_steps: int,
-        seed: int,
-        logging_steps: int,
-        do_eval: bool,
+            self,
+            config: TrainingConfig
     ):
-        self.split_value = split_value
-        self.training_folder = training_folder
-        self.tb_path = Path(self.training_folder / "tensorboard")
-        self.tb_writer = SummaryWriter(self.tb_path, flush_secs=30)
-        self.training_epochs = training_epochs
-        self.head_learning_rate = head_learning_rate
-        self.warmup_steps = warmup_steps
-        self.optimizer_path = Path(self.training_folder / "optimizer.pt")
-        self.scheduler_path = Path(self.training_folder / "scheduler.pt")
-        self.amp = amp
-        self.local_rank = local_rank
-        self.gradient_accumulation_steps = gradient_accumulation_steps
-        self.seed = seed
-        self.logging_steps = logging_steps
-        self.do_eval = do_eval
-        self.output_folder = Path(self.training_folder / "output")
+        self.config = config
+        self.tb_path = Path(self.config.training_folder).joinpath("tensorboard")
+        self.tb_writer = SummaryWriter(str(self.tb_path), flush_secs=30)
+        self.optimizer_path = Path(self.config.training_folder).joinpath("optimizer.pt")
+        self.scheduler_path = Path(self.config.training_folder).joinpath("scheduler.pt")
+        self.output_folder = Path(self.config.training_folder).joinpath("output")
 
-        self.context = {
-            "device": torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu"),
-            "dtype": torch.float32,
-        }
+        self.context = Context
         self.n_gpu = torch.cuda.device_count()
 
         if not self.tb_path.is_dir():
@@ -60,28 +40,19 @@ class Trainer:
         if not self.output_folder.is_dir():
             self.output_folder.mkdir()
 
-    @staticmethod
-    def from_config(self, config: TrainingCgf) -> "Trainer":
-        return Trainer(
-            split_value=config.split_value,
-            training_folder=config.training_folder,
-            training_epochs=config.training_epochs,
-            head_learning_rate=config.head_learning_rate,
-            weight_decay=config.weight_decay,
-            warmup_steps=config.warmup_steps,
-            local_rank=config.local_rank,
-            gradient_accumulation_steps=config.gradient_accumulation_steps,
-            seed=config.seed,
-            logging_steps=config.logging_steps,
-            do_eval=config.do_eval,
-        )
-
-    def train(self, model: S2ECR, batched_data: DataLoader, evaluator, tokenizer) -> None:
+    def train(
+            self,
+            model: S2EModel,
+            batched_data: DataLoader,
+            evaluator: Optional = None
+    ) -> Tuple[float, float]:
         """ Train the model """
 
         logger.info("Tensorboard summary path: %s" % self.tb_path)
-
-        t_total = len(batched_data) * self.training_epochs
+        t_total = \
+            len(batched_data) // \
+            self.config.gradient_accumulation_steps * \
+            self.config.training_epochs
 
         # Prepare optimizer and schedule (linear warmup and decay)
         no_decay = ["bias", "LayerNorm.weight"]
@@ -108,72 +79,74 @@ class Trainer:
             if any(hp in n for hp in head_params) and any(nd in n for nd in no_decay)
         ]
 
-        head_learning_rate = self.head_learning_rate if self.head_learning_rate else self.learning_rate
+        head_learning_rate = self.config.head_learning_rate \
+            if self.config.head_learning_rate \
+            else self.config.learning_rate
         optimizer_grouped_parameters = [
-            {"params": model_decay, "lr": self.learning_rate, "weight_decay": self.weight_decay},
-            {"params": model_no_decay, "lr": self.learning_rate, "weight_decay": 0.0},
-            {"params": head_decay, "lr": head_learning_rate, "weight_decay": self.weight_decay},
+            {"params": model_decay, "lr": self.config.learning_rate, "weight_decay": self.config.weight_decay},
+            {"params": model_no_decay, "lr": self.config.learning_rate, "weight_decay": 0.0},
+            {"params": head_decay, "lr": head_learning_rate, "weight_decay": self.config.weight_decay},
             {"params": head_no_decay, "lr": head_learning_rate, "weight_decay": 0.0},
         ]
         optimizer = AdamW(
             optimizer_grouped_parameters,
-            lr=self.learning_rate,
-            betas=(self.adam_beta1, self.adam_beta2),
-            eps=self.adam_epsilon,
+            lr=self.config.learning_rate,
+            betas=(self.config.adam_beta1, self.config.adam_beta2),
+            eps=self.config.adam_epsilon,
         )
         scheduler = get_linear_schedule_with_warmup(
-            optimizer, num_warmup_steps=self.warmup_steps, num_training_steps=t_total
+            optimizer, num_warmup_steps=self.config.warmup_steps, num_training_steps=t_total
         )
 
         loaded_saved_optimizer = False
         # Check if saved optimizer or scheduler states exist
-
         if self.scheduler_path.is_file() and self.optimizer_path.is_file():
             # Load in optimizer and scheduler states
             optimizer.load_state_dict(torch.load(self.optimizer_path))
             scheduler.load_state_dict(torch.load(self.scheduler_path))
             loaded_saved_optimizer = True
 
-        if self.amp:
+        if self.config.amp:
             try:
                 from apex import amp
             except ImportError:
                 raise ImportError(
                     "Please install apex from https://www.github.com/nvidia/apex to use fp16 training."
                 )
-            model, optimizer = amp.initialize(model, optimizer, opt_level=self.fp16_opt_level)
+            model, optimizer = amp.initialize(model, optimizer, opt_level=self.config.fp16_opt_level)
 
         # Distributed training (should be after apex fp16 initialization)
-        if self.local_rank != -1:
+        if self.config.local_rank != -1:
             model = torch.nn.parallel.DistributedDataParallel(
                 model,
-                device_ids=[self.local_rank],
-                output_device=self.local_rank,
+                device_ids=[self.config.local_rank],
+                output_device=self.config.local_rank,
                 find_unused_parameters=True,
             )
 
         # Train!
         logger.info("***** Running training *****")
         logger.info("  Num examples = %d", sum([len(batch) for batch in batched_data]))
-        logger.info("  Num Epochs = %d", self.training_epochs)
-        logger.info("  Gradient Accumulation steps = %d", self.gradient_accumulation_steps)
+        logger.info("  Num Epochs = %d", self.config.training_epochs)
+        logger.info("  Gradient Accumulation steps = %d", self.config.gradient_accumulation_steps)
         logger.info("  Total optimization steps = %d", t_total)
 
         global_step = 0
         tr_loss, logging_loss = 0.0, 0.0
         model.zero_grad()
-        set_seed(self.seed)  # Added here for reproducibility (even between python 2 and 3)
+        set_seed(self.config.seed, n_gpu=self.n_gpu)  # Added here for reproducibility (even between python 2 and 3)
 
         train_iterator = trange(
-            0, int(self.training_epochs), desc="Epoch", disable=self.local_rank not in [-1, 0]
+            0, int(self.config.training_epochs), desc="Epoch", disable=self.config.local_rank not in [-1, 0]
         )
 
         best_f1 = -1
         best_global_step = -1
         for _ in train_iterator:
-            epoch_iterator = tqdm(batched_data, desc="Iteration", disable=self.local_rank not in [-1, 0])
+            epoch_iterator = tqdm(batched_data, desc="Iteration", disable=self.config.local_rank not in [-1, 0])
             for step, batch in enumerate(epoch_iterator):
-                batch = tuple(tensor.to(self.context["device"]) for tensor in batch)
+                # print(batch)Î
+                batch = tuple(tensor.to(self.context.device) for tensor in batch[1])
                 input_ids, attention_mask, gold_clusters = batch
                 model.train()
 
@@ -189,17 +162,17 @@ class Trainer:
                 if self.n_gpu > 1:
                     loss = loss.mean()  # mean() to average on multi-gpu parallel training
                     losses = {key: val.mean() for key, val in losses.items()}
-                if self.gradient_accumulation_steps > 1:
-                    loss = loss / self.gradient_accumulation_steps
+                if self.config.gradient_accumulation_steps > 1:
+                    loss = loss / self.config.gradient_accumulation_steps
 
-                if self.amp:
+                if self.config.amp:
                     with amp.scale_loss(loss, optimizer) as scaled_loss:
                         scaled_loss.backward()
                 else:
                     loss.backward()
 
                 tr_loss += loss.item()
-                if (step + 1) % self.gradient_accumulation_steps == 0:
+                if (step + 1) % self.config.gradient_accumulation_steps == 0:
                     optimizer.step()
                     scheduler.step()  # Update learning rate schedule
                     model.zero_grad()
@@ -207,11 +180,11 @@ class Trainer:
 
                     # Log metrics
                     if (
-                        self.local_rank in [-1, 0]
-                        and self.logging_steps > 0
-                        and global_step % self.logging_steps == 0
+                            self.config.local_rank in [-1, 0]
+                            and self.config.logging_steps > 0
+                            and global_step % self.config.logging_steps == 0
                     ):
-                        loss_to_write = (tr_loss - logging_loss) / self.logging_steps
+                        loss_to_write = (tr_loss - logging_loss) / self.config.logging_steps
                         logger.info(f"\nloss step {global_step}: {loss_to_write}")
                         self.tb_writer.add_scalar("Training_Loss", loss_to_write, global_step)
                         for key, value in losses.items():
@@ -220,10 +193,10 @@ class Trainer:
                         logging_loss = tr_loss
 
                     if (
-                        self.local_rank in [-1, 0]
-                        and self.do_eval
-                        and self.logging_steps > 0
-                        and global_step % self.logging_steps == 0
+                            self.config.local_rank in [-1, 0]
+                            and self.config.do_eval
+                            and self.config.logging_steps > 0
+                            and global_step % self.config.logging_steps == 0
                     ):
                         results = evaluator.evaluate(
                             model,
@@ -236,35 +209,33 @@ class Trainer:
                             best_f1 = f1
                             best_global_step = global_step
                             # Save model checkpoint
-                            output_dir = self.output_folder / f"checkpoint-{global_step}"
+                            output_dir = self.output_folder.joinpath(f"checkpoint-{global_step}")
                             if not output_dir.is_dir():
                                 output_dir.mkdir()
 
-                            ##### WTF?! #####
                             model_to_save = (
                                 model.module if hasattr(model, "module") else model
                             )  # Take care of distributed/parallel training
                             model_to_save.save_pretrained(output_dir)
-                            tokenizer.save_pretrained(output_dir)
 
                             logger.info("Saving model checkpoint to %s", output_dir)
 
-                            torch.save(optimizer.state_dict(), output_dir / "optimizer.pt")
-                            torch.save(scheduler.state_dict(), output_dir / "scheduler.pt")
+                            torch.save(optimizer.state_dict(), output_dir.joinpath("optimizer.pt"))
+                            torch.save(scheduler.state_dict(), output_dir.joinpath("scheduler.pt"))
                             logger.info("Saving optimizer and scheduler states to %s", output_dir)
                         logger.info(f"best f1 is {best_f1} on global step {best_global_step}")
         train_iterator.close()
 
-        with open(self.output_dir / f"best_f1.json", "w") as f:
+        with open(Path(self.config.training_folder).joinpath(f"best_f1.json"), "w") as f:
             json.dump({"best_f1": best_f1, "best_global_step": best_global_step}, f)
 
         self.tb_writer.close()
         return global_step, tr_loss / global_step
 
 
-def set_seed(args):
-    random.seed(args.seed)
-    np.random.seed(args.seed)
-    torch.manual_seed(args.seed)
-    if args.n_gpu > 0:
-        torch.cuda.manual_seed_all(args.seed)
+def set_seed(seed: int, n_gpu: int) -> None:
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    if n_gpu > 0:
+        torch.cuda.manual_seed_all(seed)

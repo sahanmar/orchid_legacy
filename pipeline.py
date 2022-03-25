@@ -1,130 +1,60 @@
-import torch
-import torch.nn as nn
-
 from typing import Optional
 
-from nlp.encoder import (
-    GeneralisedBertEncoder,
-    bpe_to_original_embeddings_many,
-    to_doc_based_batches,
-    text_based_span_and_corref_tokens_shift,
-    get_batch_idxs,
-)
-from data_processing.conll_parses import ConllParser
+from config import Config, Context
 from data_processing.cacher import Cacher
-from config.config import Config, ModelCfg
+from data_processing.coref_dataset import (
+    get_dataset,
+    CorefDataset,
+    BucketBatchSampler
+)
+from nlp.models.torch.s2ecr import S2EModel
+from nlp.models.torch.s2ecr_training import Trainer
+from utils.log import get_stream_logger
+from utils.types import PipelineOutput, Response
 
-# from nlp.models.torch.e2ecr import E2ECR, Trainer, create_target_values
-from nlp.models.torch.s2ecr import S2ECR
-from nlp.models import batch_split_idx
-
-from utils.util_types import PipelineOutput, Response
-
-context = {"device": torch.device("cuda" if torch.cuda.is_available() else "cpu"), "dtype": torch.float32}
+logger = get_stream_logger(__name__)
 
 
 class OrchidPipeline:
     def __init__(
-        self,
-        data_loader: ConllParser,
-        encoder: GeneralisedBertEncoder,
-        coref_config: ModelCfg,
-        cacher: Optional[Cacher],
+            self,
+            config: Config,
+            cacher: Optional[Cacher] = None,
     ):
-        self.data_loader = data_loader
-        self.encoder = encoder
-        self.coref_config = coref_config
-        self.cacher = cacher
+        self.config = config
 
-    @staticmethod
-    def from_config(config: Config) -> "OrchidPipeline":
-        return OrchidPipeline(
-            data_loader=ConllParser.from_config(config),
-            encoder=GeneralisedBertEncoder.from_config(config.encoding),
-            coref_config=config.model,
-            cacher=Cacher.from_config(config.cache) if config.cache is not None else None,
-        )
+        if cacher is None:
+            self.cacher = Cacher.from_config(self.config.cache) \
+                if self.config.cache is not None else None
+        else:
+            self.cacher = cacher
 
     def __call__(self):
         try:
             # Load Data
-            sentences = self.data_loader()
-
-            # Encode
-            sentences_texts = [[token.text for token in sent.word_tokens] for sent in sentences]
-            doc_ids = [sent.document_index for sent in sentences]
-            text_spans, grouped_shift_correfs = text_based_span_and_corref_tokens_shift(sentences, doc_ids)
-
-            encoded_tokens_per_sentences = self.encoder.encode_many(sentences_texts, cacher=self.cacher)
-            orig_encoded_tokens_per_sentences = bpe_to_original_embeddings_many(encoded_tokens_per_sentences)
-
-            # Batch the data
-            doc_based_batches = to_doc_based_batches(
-                orig_encoded_tokens_per_sentences, doc_ids, self.coref_config.params.batch_size
-            )
-            # text_spans_batches = [
-            #     text_spans[i_start:i_end]
-            #     for i_start, i_end in zip(*get_batch_idxs(len(text_spans), self.corref_config.batch_size))
-            # ]
-
-            # Model Initializing, Training, Inferencing
-            model = S2ECR.from_config(
-                config=self.coref_config.params,
-                encoder=self.encoder,
-            ).to(context["device"])
-            if torch.cuda.device_count() > 1:
-                print("Let's use", torch.cuda.device_count(), "GPUs!")
-                model = torch.nn.DataParallel(model)
-
-            print(model)
-
-            # try first sentence
-            _, seq_len, _ = doc_based_batches[0].size()
-
-            model_out = model.forward(
-                encoded_doc=doc_based_batches[0],
-                attention_mask=torch.ones((self.coref_config.params.batch_size, seq_len)),
-                return_all_outputs=True,
+            logger.info('Starting data preparation')
+            train_dataset: CorefDataset = get_dataset('dev', config=self.config)
+            train_dataloader: BucketBatchSampler = BucketBatchSampler(
+                train_dataset,
+                max_seq_len=self.config.encoding.max_seq_len,
+                max_total_seq_len=self.config.text.max_total_seq_len,
+                batch_size_1=self.config.model.params.batch_size == 1
             )
 
-            # import IPython
-            #
-            # IPython.embed()
-            # model = E2ECR(**self.corref_config.params).to(context["device"])
+            # Model
+            logger.info('Starting model preparation')
+            model = S2EModel.from_config(config=self.config).to(Context.device)
             # if torch.cuda.device_count() > 1:
             #     print("Let's use", torch.cuda.device_count(), "GPUs!")
-            #     model.score_spans.attention = nn.DataParallel(model.score_spans.attention)
-            #     model.score_spans.score = nn.DataParallel(model.score_spans.score)
-            #     model.score_pairs.score = nn.DataParallel(model.score_pairs.score)
-            # print(model)
-            # if self.corref_config.train:
-            #     # TODO ADD TESTS!
-            #     target_values_batches = [
-            #         create_target_values(text_spans[i_start:i_end], grouped_shift_correfs[i_start:i_end])
-            #         for i_start, i_end in zip(*get_batch_idxs(len(text_spans), self.corref_config.batch_size))
-            #     ]
-            #     split_inx = batch_split_idx(len(doc_based_batches), self.corref_config.split_value)
-            #     train_docs, train_span_ids, train_target = (
-            #         doc_based_batches[:split_inx],
-            #         text_spans_batches[:split_inx],
-            #         target_values_batches[:split_inx],
-            #     )
-            #     test_docs, test_span_ids, test_target = (
-            #         doc_based_batches[split_inx:],
-            #         text_spans_batches[split_inx:],
-            #         target_values_batches[split_inx:],
-            #     )
-            #     # Initialize Trainer
-            #     trainer = Trainer(model)
+            #     model = torch.nn.DataParallel(model)
 
-            # trainer.train(
-            #     train_data=(train_docs, train_span_ids, train_target),
-            #     test_data=(test_docs, test_span_ids, test_target),
-            #     folder_to_save=self.corref_config.training_folder,
-            #     num_epochs=5,
-            # )
+            # Trainer
+            logger.info('Initializing Trainer')
+            trainer = Trainer(config=self.config.model.training)
+            trainer.train(model=model, batched_data=train_dataloader)
 
             return PipelineOutput(state=Response.success)
 
         except Exception as ex:  # must specify the error type
+            logger.error('Pipeline stopped with an exception', exc_info=ex)
             return PipelineOutput(state=Response.fail)

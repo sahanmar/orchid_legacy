@@ -2,15 +2,15 @@ import unittest
 
 import torch
 
-from nlp.encoder import GeneralisedBertEncoder
-from config.config import EncodingCfg
-from utils.util_types import EncodingType
+from nlp.encoder import GeneralisedBERTEncoder
+from config.config import EncoderConfig
+from utils.types import EncodingType
 
 
 class EncodingTest(unittest.TestCase):
     def test_encdoing(self):
-        cfg = EncodingCfg(EncodingType.SpanBERT_base_cased)
-        encoding_model = GeneralisedBertEncoder.from_config(cfg)
+        cfg = EncoderConfig(EncodingType.SpanBERT_base_cased)
+        encoding_model = GeneralisedBERTEncoder.from_config(cfg)
 
         text = "It is Saturday and instead of being out I am wring these test cases ."
         tokenized_text = text.split()

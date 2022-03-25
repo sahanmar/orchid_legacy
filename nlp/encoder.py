@@ -8,11 +8,11 @@ from transformers import AutoTokenizer, AutoModel, AutoConfig  # type: ignore
 from tqdm import tqdm
 from transformers.models import bert
 
-from config.config import EncodingCfg
+from config.config import EncoderConfig
 from data_processing.cacher import Cacher
-from utils.util_types import EncodingType, TensorType, TokenRange
-from utils.utils import out_of_menu_exit
-from utils.util_types import ConllSentence
+from utils.types import EncodingType, TensorType, TokenRange
+from utils.general import out_of_menu_exit
+from utils.types import ConllSentence
 
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 
@@ -29,15 +29,15 @@ ENCODER_MAPPER = {
 }
 
 TENSOR_MAPPER = {
-    TensorType.torch.value: "pt",
-    TensorType.tensorFlow.value: "tf",
-    TensorType.numpy.value: "np",
+    TensorType.pt.value: "pt",
+    TensorType.tf.value: "tf",
+    TensorType.np.value: "np",
 }
 
 Tensor = TypeVar("Tensor", torch.Tensor, np.ndarray)
 
 
-class GeneralisedBertEncoder:
+class GeneralisedBERTEncoder:
     def __init__(self, model: AutoModel, tokenizer: AutoTokenizer, config: AutoConfig):
         self.model = model.to(CONTEXT["device"])
         self.tokenizer = tokenizer
@@ -51,21 +51,25 @@ class GeneralisedBertEncoder:
                f')'
 
     @staticmethod
-    def from_config(config: EncodingCfg) -> "GeneralisedBertEncoder":
+    def from_config(config: EncoderConfig) -> "GeneralisedBERTEncoder":
 
-        if config.encoding_type.value not in ENCODER_MAPPER:
+        if config.encoder_path.value not in ENCODER_MAPPER:
             out_of_menu_exit(text="encoder")
 
-        encoder = ENCODER_MAPPER[config.encoding_type.value]
+        encoder_path = ENCODER_MAPPER[config.encoder_path.value]
 
-        model = AutoModel.from_pretrained(encoder)
-        tokenizer = AutoTokenizer.from_pretrained(encoder)
-        bert_config = AutoConfig.from_pretrained(encoder)
+        model_config = AutoConfig.from_pretrained(encoder_path)
+        model = AutoModel.from_config(encoder_path)
+        tokenizer = AutoTokenizer.from_pretrained(encoder_path)
 
-        return GeneralisedBertEncoder(model, tokenizer, bert_config)
+        return GeneralisedBERTEncoder(
+            model,
+            tokenizer,
+            model_config
+        )
 
     def __call__(
-        self, tokens: List[str], tensors_type: TensorType = TensorType.torch
+        self, tokens: List[str], tensors_type: TensorType = TensorType.pt
     ) -> Dict[str, Union[torch.Tensor, np.ndarray, List[List[int]]]]:
 
         """
@@ -107,7 +111,7 @@ class GeneralisedBertEncoder:
     def encode_many(
         self,
         tokenized_sentences: List[List[str]],
-        tensors_type: TensorType = TensorType.torch,
+        tensors_type: TensorType = TensorType.pt,
         cacher: Optional[Cacher] = None,
     ) -> List[Dict[str, Union[torch.Tensor, np.ndarray, List[List[int]]]]]:
         encoded_sentences: List[Dict[str, Union[torch.Tensor, np.ndarray, List[List[int]]]]] = []

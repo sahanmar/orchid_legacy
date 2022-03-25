@@ -1,52 +1,55 @@
 {
-    "data": {
-        "train": "/home/sahanmar/Datasets/data/english_gold_conll/train/train.english.v4_gold_conll",
-        "test": "/home/sahanmar/Datasets/data/english_gold_conll/test/test.english.v4_auto_conll",
-        "dev": "/home/sahanmar/Datasets/data/english_gold_conll/dev/dev.english.v4_gold_conll"
+  "data_path": {
+    "train": "/home/sahanmar/Datasets/data/english_gold_conll/train/train.english.v4_gold_conll",
+    "test": "/home/sahanmar/Datasets/data/english_gold_conll/test/test.english.v4_auto_conll",
+    "dev": "/home/sahanmar/Datasets/data/english_gold_conll/dev/dev.english.v4_gold_conll"
+  },
+  "model": {
+    "dev_mode": false,
+    "train": true,
+    "params": {
+      "embeds_dim": 768,
+      "max_span_length": 1000,
+      "top_lambda": 0.4,
+      "dropout_prob": 0.3,
+      "ffnn_size": 0,
+      "normalise_loss": false,
+      "batch_size": 1
     },
-    "model": {
-        "dev_mode": false,
-        "train": true,
-        "params": {
-            "embeds_dim": 768,
-            "max_span_length": 1000,
-            "top_lambda": 0.4,
-            "dropout_prob": 0.3,
-            "ffnn_size": 0,
-            "normalise_loss": false,
-            "batch_size": 1
-        },
-        "training": {
-            "split_value": 0.9,
-            "training_folder": "training_folder",
-            "training_epochs": 130,
-            "head_learning_rate": 0.0003,
-            "weight_decay": 0.01,
-            "learning_rate": 0.00005,
-            "warmup_steps": 5600,
-            "adam_beta1": 0.9,
-            "adam_beta2": 0.98,
-            "amp": false,
-            "fp16_opt_level": "01",
-            "local_rank": 0,
-            "gradient_accumulation_steps": 1,
-            "seed": 42,
-            "logging_steps": 500,
-            "do_eval": true
-        },
-        "enable_cuda": true
+    "training": {
+      "split_value": 0.9,
+      "training_folder": "training_folder",
+      "training_epochs": 5,
+      "head_learning_rate": 3e-4,
+      "weight_decay": 0.01,
+      "learning_rate": 1e-5,
+      "warmup_steps": 5600,
+      "adam_epsilon": 1e-6,
+      "adam_beta1": 0.9,
+      "adam_beta2": 0.98,
+      "amp": false,
+      "fp16_opt_level": "01",
+      "local_rank": -1,
+      "gradient_accumulation_steps": 1,
+      "seed": 42,
+      "logging_steps": 500,
+      "do_eval": true
     },
-    "text": {
-        "coreference_tags": [
-            "NML",
-            "NP"
-        ]
-    },
-    "encoding": {
-        "encoding_type": "SpanBERT_base_cased"
-    },
-    "cache": {
-        "path": "/home/sahanmar/cache/",
-        "tensor_type": "pt"
-    }
+    "enable_cuda": true
+  },
+  "text": {
+    "coreference_tags": [
+      "NML",
+      "NP"
+    ],
+    "max_total_seq_len": 5000
+  },
+  "encoding": {
+    "encoding_type": "longformer_large_4096",
+    "max_seq_len": 4096
+  },
+  "cache": {
+    "path": "/home/sahanmar/cache/",
+    "tensor_type": "pt"
+  }
 }

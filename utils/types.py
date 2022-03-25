@@ -4,25 +4,20 @@ from enum import Enum
 from typing import Optional, Callable, Dict, List, Union
 
 
-class EncodingType(Enum):
-    SpanBERT_base_cased = 1
-    SpanBERT_large_cased = 2
-
-
 class TensorType(Enum):
-    torch = 1
-    tensorFlow = 2
-    numpy = 3
+    pt = 1
+    tf = 2
+    np = 3
 
 
-class CorrefTokenType(Enum):
+class CorefTokenType(Enum):
     """
-    Correferences are labeled as spans. Thus, more than one
-    consecutive words can be assigned to the same correference.
+    Coreferences are labeled as spans. Thus, more than one
+    consecutive words can be assigned to the same coreference.
     We distinguish
     start <- the begging of the span
     end <- the end of the span
-    full <- the correference is one token
+    full <- the coreference is one token
     """
 
     start = 1

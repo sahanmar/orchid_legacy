@@ -5,7 +5,7 @@ import logging
 
 from typing import Any, List, Tuple, Union, Dict
 
-from utils.util_types import TokenRange
+from utils.types import TokenRange
 
 from datetime import datetime
 from tqdm import tqdm

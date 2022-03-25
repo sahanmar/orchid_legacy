@@ -6,8 +6,8 @@ from typing import Dict, List, TypeVar, Union, Optional
 
 from torch import Tensor
 
-from config.config import CacheCfg
-from utils.util_types import TensorType
+from config.config import CacheConfig
+from utils.types import TensorType
 
 EncodedInstance = TypeVar("EncodedInstance")
 
@@ -26,7 +26,7 @@ class Cacher:
         self.cached_ids = set(el.name for el in self.path.iterdir() if el.is_dir())
 
     @staticmethod
-    def from_config(config: CacheCfg) -> "Cacher":
+    def from_config(config: CacheConfig) -> "Cacher":
         return Cacher(config.path, config.tensor_type)
 
     def create_cache(self, hash: str, encoded_instance: Dict[str, EncodedInstance]) -> None:
@@ -57,13 +57,13 @@ class Cacher:
         }
 
     def write_tensors(self, path: Path, tensor: EncodedInstance) -> None:
-        if self.tensor_type == TensorType.torch:
+        if self.tensor_type == TensorType.pt:
             torch.save(tensor, path.parent / (path.name + ".pt"))
         else:
             raise Exception("Not implemented for this type of tensor...")
 
     def load_tensor(self, path) -> EncodedInstance:
-        if self.tensor_type == TensorType.torch:
+        if self.tensor_type == TensorType.pt:
             return torch.load(path.parent / (path.name + ".pt"))
         else:
             raise Exception("Not implemented for this type of tensor...")
