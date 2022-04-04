@@ -4,24 +4,30 @@
 \input{./source/packages.tex}
 
 %% Preamble and primary settings
-\input{./source/settings.tex}
+%%\input{./source/settings.tex}
+%% Custom items in lists
+\def\customitem[#1]{\item[#1\vspace{0pt}]}
 
 
 %% Bibliography path
 %% Everyone has to set up their own path which works for their LaTeX typesetter and comment out all other paths
 \newcommand{\bibpath}{./references}  % MacOS - texpad
 
+%%\setlength{\bibitemsep}{0.5\baselineskip}
+\usepackage{bibspacing}
+\setlength{\bibspacing}{\baselineskip}
+
 %% Document
 \begin{document}
 
 {\Large  \noindent \textbf{Czech Science Foundation - Part C}}
 
-\begin{center}
-	\Large \textit{Description and Substantiation of the Project}
-\end{center}
-
-
-\vspace{.25cm}
+%\begin{center}
+%	\Large \textit{Description and Substantiation of the Project}
+%\end{center}
+%
+%
+%\vspace{.25cm}
 \begin{minipage}{.9\textwidth}
 {\noindent
 
