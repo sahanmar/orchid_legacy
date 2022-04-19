@@ -7,6 +7,7 @@ from data_processing.coref_dataset import (
     CorefDataset,
     BucketBatchSampler
 )
+from nlp.evaluation import Evaluator
 from nlp.models.torch.s2ecr import S2EModel
 from nlp.models.torch.s2ecr_training import Trainer
 from utils.log import get_stream_logger
@@ -48,10 +49,17 @@ class OrchidPipeline:
             #     print("Let's use", torch.cuda.device_count(), "GPUs!")
             #     model = torch.nn.DataParallel(model)
 
+            # Evaluator
+            evaluator = Evaluator(config=self.config)
+
             # Trainer
             logger.info('Initializing Trainer')
             trainer = Trainer(config=self.config.model.training)
-            trainer.train(model=model, batched_data=train_dataloader)
+            trainer.train(
+                model=model,
+                batched_data=train_dataloader,
+                evaluator=evaluator
+            )
 
             return PipelineOutput(state=Response.success)
 

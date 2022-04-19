@@ -14,10 +14,11 @@ from tqdm import tqdm, trange
 from transformers import AdamW, get_linear_schedule_with_warmup
 
 from config import TrainingConfig, Context
-from nlp.models.torch.s2ecr import S2EModel
 from utils.log import get_stream_logger
+from .s2ecr import S2EModel
+from ...evaluation import Evaluator
 
-logger = get_stream_logger(__name__)
+logger = get_stream_logger('s2e-training')
 
 
 class Trainer:
@@ -32,9 +33,6 @@ class Trainer:
         self.scheduler_path = Path(self.config.training_folder).joinpath("scheduler.pt")
         self.output_folder = Path(self.config.training_folder).joinpath("output")
 
-        self.context = Context
-        self.n_gpu = torch.cuda.device_count()
-
         if not self.tb_path.is_dir():
             self.tb_path.mkdir()
         if not self.output_folder.is_dir():
@@ -44,7 +42,7 @@ class Trainer:
             self,
             model: S2EModel,
             batched_data: DataLoader,
-            evaluator: Optional = None
+            evaluator: Optional[Evaluator] = None,
     ) -> Tuple[float, float]:
         """ Train the model """
 
@@ -134,7 +132,7 @@ class Trainer:
         global_step = 0
         tr_loss, logging_loss = 0.0, 0.0
         model.zero_grad()
-        set_seed(self.config.seed, n_gpu=self.n_gpu)  # Added here for reproducibility (even between python 2 and 3)
+        set_seed(self.config.seed, n_gpu=Context.n_gpu)  # Added here for reproducibility (even between python 2 and 3)
 
         train_iterator = trange(
             0, int(self.config.training_epochs), desc="Epoch", disable=self.config.local_rank not in [-1, 0]
@@ -146,7 +144,7 @@ class Trainer:
             epoch_iterator = tqdm(batched_data, desc="Iteration", disable=self.config.local_rank not in [-1, 0])
             for step, batch in enumerate(epoch_iterator):
                 # print(batch)Î
-                batch = tuple(tensor.to(self.context.device) for tensor in batch[1])
+                batch = tuple(tensor.to(Context.device) for tensor in batch[1])
                 input_ids, attention_mask, gold_clusters = batch
                 model.train()
 
@@ -159,7 +157,7 @@ class Trainer:
                 loss = outputs[0]  # model outputs are always tuple in transformers (see doc)
                 losses = outputs[-1]
 
-                if self.n_gpu > 1:
+                if Context.n_gpu > 1:
                     loss = loss.mean()  # mean() to average on multi-gpu parallel training
                     losses = {key: val.mean() for key, val in losses.items()}
                 if self.config.gradient_accumulation_steps > 1:
@@ -197,9 +195,10 @@ class Trainer:
                             and self.config.do_eval
                             and self.config.logging_steps > 0
                             and global_step % self.config.logging_steps == 0
+                            and evaluator is not None
                     ):
                         results = evaluator.evaluate(
-                            model,
+                            model=model,
                             prefix=f"step_{global_step}",
                             tb_writer=self.tb_writer,
                             global_step=global_step,

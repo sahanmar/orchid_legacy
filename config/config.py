@@ -54,6 +54,7 @@ class AbstractOrchidConfig(metaclass=ABCMeta):
 class Context(AbstractOrchidConfig):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     dtype = torch.float32
+    n_gpu: int = torch.cuda.device_count()
 
 
 @dataclass(frozen=True)
@@ -102,6 +103,7 @@ class TrainingConfig(AbstractOrchidConfig):
     seed: int
     logging_steps: int
     do_eval: True
+    eval_output_dir: str
 
 
 @dataclass(frozen=True)

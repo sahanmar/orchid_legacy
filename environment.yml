@@ -18,3 +18,4 @@ dependencies:
     - pytest
     - python-dotenv
     - tensorboard
+    - scipy

@@ -1,7 +1,9 @@
 import unittest
 
-from evaluation import metrics
+from nlp.evaluation import _metrics
 
+
+# TODO: fix tests
 
 class TestMetrics(unittest.TestCase):
     def test_mcu_metric(self):
@@ -26,7 +28,6 @@ class TestMetrics(unittest.TestCase):
         self.assertAlmostEqual(f1, 0.947, 3)
 
     def test_bcubed_metric(self):
-
         # The same task as above
         key = [{1, 2, 3, 4, 5}, {6, 7}, {8, 9, 10, 11, 12}]
         response = [{1, 2, 3, 4, 5}, {6, 7, 8, 9, 10, 11, 12}]

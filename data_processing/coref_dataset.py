@@ -166,6 +166,8 @@ class CorefDataset(Dataset):
         padded_batch = []
         for example in batch:
             encoded_dict = self.tokenizer.encode_plus(
+                # TODO: do this in a better way; this is just a fix
+                #  for the non-functional code from the parent s2e repo
                 self.tokenizer.decode(
                     example[0],
                     skip_special_tokens=False,

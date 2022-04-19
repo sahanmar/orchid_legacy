@@ -32,8 +32,9 @@
       "local_rank": -1,
       "gradient_accumulation_steps": 1,
       "seed": 42,
-      "logging_steps": 500,
-      "do_eval": true
+      "logging_steps": 1,
+      "do_eval": true,
+      "eval_output_dir": "training_folder/eval"
     },
     "enable_cuda": true
   },
