@@ -1,7 +1,4 @@
-from typing import Optional
-
 from config import Config, Context
-from data_processing.cacher import Cacher
 from data_processing.coref_dataset import (
     get_dataset,
     CorefDataset,
@@ -17,18 +14,8 @@ logger = get_stream_logger(__name__)
 
 
 class OrchidPipeline:
-    def __init__(
-            self,
-            config: Config,
-            cacher: Optional[Cacher] = None,
-    ):
+    def __init__(self, config: Config):
         self.config = config
-
-        if cacher is None:
-            self.cacher = Cacher.from_config(self.config.cache) \
-                if self.config.cache is not None else None
-        else:
-            self.cacher = cacher
 
     def __call__(self):
         try:
@@ -43,17 +30,14 @@ class OrchidPipeline:
             )
 
             # Model
-            logger.info('Starting model preparation')
+            logger.info('Initializing the model')
             model = S2EModel.from_config(config=self.config).to(Context.device)
-            # if torch.cuda.device_count() > 1:
-            #     print("Let's use", torch.cuda.device_count(), "GPUs!")
-            #     model = torch.nn.DataParallel(model)
 
             # Evaluator
             evaluator = Evaluator(config=self.config)
 
             # Trainer
-            logger.info('Initializing Trainer')
+            logger.info('Initializing the trainer')
             trainer = Trainer(config=self.config.model.training)
             trainer.train(
                 model=model,
@@ -61,6 +45,7 @@ class OrchidPipeline:
                 evaluator=evaluator
             )
 
+            logger.info('Finished')
             return PipelineOutput(state=Response.success)
 
         except Exception as ex:  # must specify the error type

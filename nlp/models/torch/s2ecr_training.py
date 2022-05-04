@@ -124,10 +124,10 @@ class Trainer:
 
         # Train!
         logger.info("***** Running training *****")
-        logger.info("  Num examples = %d", sum([len(batch) for batch in batched_data]))
-        logger.info("  Num Epochs = %d", self.config.training_epochs)
-        logger.info("  Gradient Accumulation steps = %d", self.config.gradient_accumulation_steps)
-        logger.info("  Total optimization steps = %d", t_total)
+        logger.info("Number of examples = %d", sum([len(batch) for batch in batched_data]))
+        logger.info("Number of epochs = %d", self.config.training_epochs)
+        logger.info("Gradient accumulation steps = %d", self.config.gradient_accumulation_steps)
+        logger.info("Total optimization steps = %d", t_total)
 
         global_step = 0
         tr_loss, logging_loss = 0.0, 0.0
@@ -183,10 +183,10 @@ class Trainer:
                             and global_step % self.config.logging_steps == 0
                     ):
                         loss_to_write = (tr_loss - logging_loss) / self.config.logging_steps
-                        logger.info(f"\nloss step {global_step}: {loss_to_write}")
+                        logger.info(f"loss step {global_step}: {loss_to_write}")
                         self.tb_writer.add_scalar("Training_Loss", loss_to_write, global_step)
                         for key, value in losses.items():
-                            logger.info(f"\n{key}: {value}")
+                            logger.info(f"{key}: {value}")
 
                         logging_loss = tr_loss
 

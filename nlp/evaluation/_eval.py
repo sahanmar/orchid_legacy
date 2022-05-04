@@ -6,9 +6,9 @@ import numpy as np
 import torch
 
 from config import Config, Context
-from coref_bucket_batch_sampler import BucketBatchSampler
 from data_processing.coref_dataset import (
     CorefDataset,
+    BucketBatchSampler,
     get_dataset
 )
 from utils.log import get_stream_logger
@@ -25,26 +25,30 @@ logger = get_stream_logger('evaluator')
 class Evaluator:
     def __init__(self, config: Config):
         self.config = config
+        self.eval_dataset: CorefDataset = get_dataset(
+            'test' if self.config.model.training.do_eval else 'dev',
+            config=self.config
+        )
 
     def evaluate(self, model, prefix="", tb_writer=None, global_step=None):
 
-        if self.config.model.training.eval_output_dir and \
-                not os.path.exists(self.config.model.training.eval_output_dir) and \
+        if self.config.model.training.evaluation_folder and \
+                not os.path.exists(self.config.model.training.evaluation_folder) and \
                 self.config.model.training.local_rank in [-1, 0]:
-            os.makedirs(self.config.model.training.eval_output_dir)
+            os.makedirs(self.config.model.training.evaluation_folder)
 
         # Note that DistributedSampler samples randomly
         # eval_sampler = SequentialSampler(eval_dataset) if args.local_rank == -1 else DistributedSampler(eval_dataset)
-        eval_dataset: CorefDataset = get_dataset('dev', config=self.config)
+
         eval_dataloader = BucketBatchSampler(
-            eval_dataset,
+            self.eval_dataset,
             max_total_seq_len=self.config.text.max_total_seq_len,
             batch_size_1=True
         )
 
         # Eval!
         logger.info("***** Running evaluation {} *****".format(prefix))
-        logger.info("  Examples number: %d", len(eval_dataset))
+        logger.info("  Examples number: %d", len(self.eval_dataset))
         model.eval()
 
         post_pruning_mention_evaluator = MentionEvaluator()
@@ -126,8 +130,8 @@ class Evaluator:
             if tb_writer is not None and global_step is not None:
                 tb_writer.add_scalar(key, values, global_step)
 
-        if self.config.model.training.eval_output_dir:
-            output_eval_file = os.path.join(self.config.model.training.eval_output_dir, "eval_results.txt")
+        if self.config.model.training.evaluation_folder:
+            output_eval_file = os.path.join(self.config.model.training.evaluation_folder, "eval_results.txt")
             with open(output_eval_file, "a") as writer:
                 if prefix:
                     writer.write(f'\n{prefix}:\n')

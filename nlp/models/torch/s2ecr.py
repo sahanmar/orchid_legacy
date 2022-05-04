@@ -62,7 +62,9 @@ class S2EModel(BertPreTrainedModel):
         self.ffnn_size = self.ffnn_size if self.do_mlps else config.hidden_size
         self.normalise_loss = args.normalise_loss
 
-        self.longformer = LongformerModel(config)
+        self.encoding_model = LongformerModel(config)
+        # Freeze the encoding model parameters if necessary
+        self.encoding_model.requires_grad_(args.trainable_embeddings)
 
         self.start_mention_mlp = FullyConnectedLayer(config, config.hidden_size, self.ffnn_size,
                                                      args.dropout_prob) if self.do_mlps else None
@@ -236,7 +238,7 @@ class S2EModel(BertPreTrainedModel):
         return coref_logits
 
     def forward(self, input_ids, attention_mask=None, gold_clusters=None, return_all_outputs=False):
-        outputs = self.longformer(input_ids, attention_mask=attention_mask)
+        outputs = self.encoding_model(input_ids, attention_mask=attention_mask)
         sequence_output = outputs[0]  # [batch_size, seq_len, dim]
 
         # Compute representations

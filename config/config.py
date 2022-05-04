@@ -4,11 +4,11 @@ from abc import ABCMeta
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
-from typing import Dict, List, cast, Set, Any
+from typing import Dict, List, cast, Set, Any, Union
 
 import torch
 
-from utils.env import get_env_configuration, resolve_env
+from utils.env import get_env_variables, resolve_env
 from utils.log import get_stream_logger
 from utils.types import TensorType, Optional
 
@@ -26,13 +26,18 @@ VALID_TENSOR_TYPES = {"pt": TensorType.pt, "tf": TensorType.tf, "np": TensorType
 env = resolve_env()
 __shared_env_path = Path(__file__).resolve().parents[1].joinpath(f'.env.{env}')
 __secret_env_path = Path(__file__).resolve().parents[1].joinpath(f'.env.secret')
-env_config = get_env_configuration(
+env_config = get_env_variables(
     path_shared=__shared_env_path,
     path_secret=__secret_env_path if __secret_env_path.exists() and __secret_env_path.is_file() else None
 )
 
 
 class AbstractOrchidConfig(metaclass=ABCMeta):
+    class AbsentEnvironmentVariable(Exception):
+        def __init__(self, var_name: str):
+            super().__init__(
+                f'\"{var_name}\" is not specified as the environment variable'
+            )
 
     def __init__(self, *args, **kwargs):
         pass
@@ -49,6 +54,14 @@ class AbstractOrchidConfig(metaclass=ABCMeta):
     def from_dict(cfg: Dict[str, Any]) -> "AbstractOrchidConfig":
         return AbstractOrchidConfig(**cfg)
 
+    @classmethod
+    def _get_absolute_path_from_env(cls, var_name: str) -> Path:
+        path = env_config.get(var_name)
+        if path is None:
+            raise cls.AbsentEnvironmentVariable(var_name)
+        path = Path(path).resolve()
+        return path
+
 
 @dataclass(frozen=True, init=False)
 class Context(AbstractOrchidConfig):
@@ -63,19 +76,29 @@ class DataPaths(AbstractOrchidConfig):
     test: Path
     dev: Path
 
-    @staticmethod
-    def from_dict(cfg: Dict[str, str]) -> "DataPaths":
+    @classmethod
+    def from_dict(cls, cfg: Dict[str, str]) -> "DataPaths":
         return DataPaths(
             **{
-                k: v if v.is_absolute() else Path(__file__).resolve().parents[1].joinpath(v)
+                k: cls.get_absolute_path_to_data(data_file_rel_path=v)
                 for k, v in map(lambda kv: (kv[0], Path(kv[1])), cfg.items())
             }
         )
+
+    @classmethod
+    def get_absolute_path_to_data(cls, data_file_rel_path: Union[str, Path]) -> Path:
+        path_ = cls._get_absolute_path_from_env(var_name='DATA_DIR')
+        path_ = path_.joinpath(data_file_rel_path)
+        # Make sure that data exist
+        if not path_.exists() or not path_.is_file():
+            raise FileNotFoundError(f'Invalid input data path: {str(path_)}')
+        return path_
 
 
 @dataclass(frozen=True)
 class ModelParameters(AbstractOrchidConfig):
     embeds_dim: int
+    trainable_embeddings: bool
     max_span_length: int
     top_lambda: float
     dropout_prob: float
@@ -87,7 +110,6 @@ class ModelParameters(AbstractOrchidConfig):
 @dataclass(frozen=True)
 class TrainingConfig(AbstractOrchidConfig):
     split_value: float
-    training_folder: str
     training_epochs: int
     head_learning_rate: float
     weight_decay: float
@@ -102,8 +124,13 @@ class TrainingConfig(AbstractOrchidConfig):
     gradient_accumulation_steps: int
     seed: int
     logging_steps: int
-    do_eval: True
-    eval_output_dir: str
+    do_eval: bool
+    training_folder: str = str(
+        AbstractOrchidConfig._get_absolute_path_from_env(var_name='OUTPUT_DIR')
+    )
+    evaluation_folder: str = str(
+        AbstractOrchidConfig._get_absolute_path_from_env(var_name='OUTPUT_DIR')
+    )
 
 
 @dataclass(frozen=True)
@@ -145,30 +172,6 @@ class EncoderConfig(AbstractOrchidConfig):
 
 
 @dataclass(frozen=True)
-class CacheConfig(AbstractOrchidConfig):
-    path: Path
-    tensor_type: TensorType
-
-    @staticmethod
-    def from_dict(cfg: Dict[str, str]) -> Optional["CacheConfig"]:
-        if not cfg:
-            return None
-        path = cfg['path']
-        if path is not None:
-            path = Path(path)
-        else:
-            return None
-        tensor_type = VALID_TENSOR_TYPES.get(
-            cfg["tensor_type"],
-            TensorType.pt
-        )
-        return CacheConfig(
-            path,
-            tensor_type
-        )
-
-
-@dataclass(frozen=True)
 class TextConfig(AbstractOrchidConfig):
     coreference_tags: Set[str]
     max_total_seq_len: int
@@ -186,7 +189,6 @@ class Config(AbstractOrchidConfig):
     data_path: DataPaths
     model: ModelConfig
     encoding: EncoderConfig
-    cache: Optional[CacheConfig]
     text: TextConfig
 
     @staticmethod
@@ -210,18 +212,6 @@ class Config(AbstractOrchidConfig):
                 f'No path specified, reading from {str(config_path)}'
             )
         cfg = cls._load_from_json(path=config_path)
-        if env != 'test':
-            # When in test environment, personal secret config is useless
-            secret_config_path = Path(env_config.get('SECRET_CONFIG_PATH'))
-            _logger.info(
-                f'Reading secret_configuration from {str(secret_config_path)}'
-            )
-            cfg_secret = cls._load_from_json(
-                path=secret_config_path
-            )
-            cfg.update(cfg_secret)
-        else:
-            _logger.debug('Ignoring secret configuration')
         return Config(
             **cast(
                 Dict[str, Any],  # type: ignore
@@ -229,7 +219,6 @@ class Config(AbstractOrchidConfig):
                     "data_path": DataPaths.from_dict(cfg["data_path"]),
                     "model": ModelConfig.from_dict(cfg["model"]),
                     "encoding": EncoderConfig.from_dict(cfg["encoding"]),
-                    "cache": CacheConfig.from_dict(cfg["cache"]),
                     "text": TextConfig.from_dict(cfg["text"]),
                 },
             )
