@@ -122,7 +122,11 @@ class S2EModel(BertPreTrainedModel):
                 (seq_length ** 2) - 1)  # We take different k for each example
         sorted_topk_1d_indices, _ = torch.sort(topk_1d_indices, dim=-1)  # [batch_size, max_k]
 
-        topk_mention_start_ids = sorted_topk_1d_indices // seq_length  # [batch_size, max_k]
+        topk_mention_start_ids = torch.div(
+            sorted_topk_1d_indices,
+            seq_length,
+            rounding_mode='trunc'
+        )  # [batch_size, max_k]
         topk_mention_end_ids = sorted_topk_1d_indices % seq_length  # [batch_size, max_k]
 
         topk_mention_logits = mention_logits[torch.arange(batch_size).unsqueeze(-1).expand(batch_size, max_k),
