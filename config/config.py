@@ -59,7 +59,7 @@ class AbstractOrchidConfig(metaclass=ABCMeta):
         path = env_config.get(var_name)
         if path is None:
             raise cls.AbsentEnvironmentVariable(var_name)
-        path = Path(path).resolve()
+        path = Path(path).expanduser().resolve()
         return path
 
 
