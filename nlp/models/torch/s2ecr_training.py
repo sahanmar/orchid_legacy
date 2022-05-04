@@ -113,6 +113,10 @@ class Trainer:
                 )
             model, optimizer = amp.initialize(model, optimizer, opt_level=self.config.fp16_opt_level)
 
+        # Multi-GPU setup
+        if Context.n_gpu > 1:
+            model = torch.nn.DataParallel(model)
+
         # Distributed training (should be after apex fp16 initialization)
         if self.config.local_rank != -1:
             model = torch.nn.parallel.DistributedDataParallel(

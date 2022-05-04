@@ -31,7 +31,9 @@ class OrchidPipeline:
 
             # Model
             logger.info('Initializing the model')
-            model = S2EModel.from_config(config=self.config).to(Context.device)
+            model = S2EModel.from_config(config=self.config)
+            logger.info(f'Putting the model to device={Context.device}')
+            model.to(Context.device)
 
             # Evaluator
             evaluator = Evaluator(config=self.config)
