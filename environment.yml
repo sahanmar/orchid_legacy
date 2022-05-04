@@ -8,6 +8,7 @@ dependencies:
   - nltk
   - jupyter
   - pytorch
+  - cudatoolkit == 11.3
   - pip:
     - black
     - pathlib
