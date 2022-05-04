@@ -42,8 +42,9 @@ class Evaluator:
 
         eval_dataloader = BucketBatchSampler(
             self.eval_dataset,
+            max_seq_len=self.config.encoding.max_seq_len,
             max_total_seq_len=self.config.text.max_total_seq_len,
-            batch_size_1=True
+            batch_size_1=self.config.model.params.batch_size == 1
         )
 
         # Eval!
