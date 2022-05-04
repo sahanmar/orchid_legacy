@@ -1,5 +1,5 @@
 name: orchid
-chanels:
+channels:
   - anaconda
 dependencies:
   - python == 3.8.12
