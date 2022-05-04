@@ -32,7 +32,7 @@
       "local_rank": -1,
       "gradient_accumulation_steps": 1,
       "seed": 42,
-      "logging_steps": 1,
+      "logging_steps": 256,
       "do_eval": true
     },
     "enable_cuda": true
