@@ -26,7 +26,7 @@ class Evaluator:
     def __init__(self, config: Config):
         self.config = config
         self.eval_dataset: CorefDataset = get_dataset(
-            'test' if self.config.model.training.do_eval else 'dev',
+            'dev' if self.config.model.dev_mode else 'test',
             config=self.config
         )
 
@@ -44,12 +44,12 @@ class Evaluator:
             self.eval_dataset,
             max_seq_len=self.config.encoding.max_seq_len,
             max_total_seq_len=self.config.text.max_total_seq_len,
-            batch_size_1=self.config.model.params.batch_size == 1
+            batch_size_1=True
         )
 
-        # Eval!
-        logger.info("***** Running evaluation {} *****".format(prefix))
-        logger.info("  Examples number: %d", len(self.eval_dataset))
+        # Evaluation
+        logger.info("***** Running Evaluation {} *****".format(prefix))
+        logger.info("Number of examples: %d", len(self.eval_dataset))
         model.eval()
 
         post_pruning_mention_evaluator = MentionEvaluator()
@@ -77,7 +77,7 @@ class Evaluator:
                 losses[key].append(val.item())
 
             outputs = outputs[1:-1]
-
+            
             batch_np = tuple(tensor.cpu().numpy() for tensor in batch)
             outputs_np = tuple(tensor.cpu().numpy() for tensor in outputs)
             for output in zip(*(batch_np + outputs_np)):
@@ -122,7 +122,7 @@ class Evaluator:
             ("recall", rec),
             ("f1", f1)
         ]
-        logger.info("***** Eval results {} *****".format(prefix))
+        logger.info("***** Evaluation Results {} *****".format(prefix))
         for key, values in results:
             if isinstance(values, float):
                 logger.info(f"  {key} = {values:.3f}")

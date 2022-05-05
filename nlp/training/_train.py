@@ -13,10 +13,10 @@ from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm, trange
 from transformers import AdamW, get_linear_schedule_with_warmup
 
-from config import TrainingConfig, Context
+from config import Context, Config
 from utils.log import get_stream_logger
-from .s2ecr import S2EModel
-from ...evaluation import Evaluator
+from nlp.models.torch.s2ecr import S2EModel
+from nlp.evaluation import Evaluator
 
 logger = get_stream_logger('s2e-training')
 
@@ -24,9 +24,10 @@ logger = get_stream_logger('s2e-training')
 class Trainer:
     def __init__(
             self,
-            config: TrainingConfig
+            config: Config
     ):
-        self.config = config
+        self.config = config.model.training
+        self.do_eval = config.model.eval
         self.tb_path = Path(self.config.training_folder).joinpath("tensorboard")
         self.tb_writer = SummaryWriter(str(self.tb_path), flush_secs=30)
         self.optimizer_path = Path(self.config.training_folder).joinpath("optimizer.pt")
@@ -38,7 +39,14 @@ class Trainer:
         if not self.output_folder.is_dir():
             self.output_folder.mkdir()
 
-    def train(
+        # Losses
+        self.tr_loss = 0.
+        self.logging_loss = 0.
+
+        # Counters
+        self.global_step = 0
+
+    def run(
             self,
             model: S2EModel,
             batched_data: DataLoader,
@@ -99,6 +107,7 @@ class Trainer:
         loaded_saved_optimizer = False
         # Check if saved optimizer or scheduler states exist
         if self.scheduler_path.is_file() and self.optimizer_path.is_file():
+            logger.info(f'Reading states from the checkpoint')
             # Load in optimizer and scheduler states
             optimizer.load_state_dict(torch.load(self.optimizer_path))
             scheduler.load_state_dict(torch.load(self.scheduler_path))
@@ -133,10 +142,11 @@ class Trainer:
         logger.info("Gradient accumulation steps = %d", self.config.gradient_accumulation_steps)
         logger.info("Total optimization steps = %d", t_total)
 
-        global_step = 0
-        tr_loss, logging_loss = 0.0, 0.0
+        self.global_step = 0
+        self.tr_loss, self.logging_loss = 0.0, 0.0
         model.zero_grad()
-        set_seed(self.config.seed, n_gpu=Context.n_gpu)  # Added here for reproducibility (even between python 2 and 3)
+        # Added here for reproducibility
+        set_seed(self.config.seed, n_gpu=Context.n_gpu)
 
         train_iterator = trange(
             0, int(self.config.training_epochs), desc="Epoch", disable=self.config.local_rank not in [-1, 0]
@@ -173,46 +183,46 @@ class Trainer:
                 else:
                     loss.backward()
 
-                tr_loss += loss.item()
+                self.tr_loss += loss.item()
                 if (step + 1) % self.config.gradient_accumulation_steps == 0:
                     optimizer.step()
                     scheduler.step()  # Update learning rate schedule
                     model.zero_grad()
-                    global_step += 1
+                    self.global_step += 1
 
                     # Log metrics
                     if (
                             self.config.local_rank in [-1, 0]
                             and self.config.logging_steps > 0
-                            and global_step % self.config.logging_steps == 0
+                            and self.global_step % self.config.logging_steps == 0
                     ):
-                        loss_to_write = (tr_loss - logging_loss) / self.config.logging_steps
-                        logger.info(f"loss step {global_step}: {loss_to_write}")
-                        self.tb_writer.add_scalar("Training_Loss", loss_to_write, global_step)
+                        loss_to_write = (self.tr_loss - self.logging_loss) / self.config.logging_steps
+                        logger.info(f"loss step {self.global_step}: {loss_to_write}")
+                        self.tb_writer.add_scalar("Training_Loss", loss_to_write, self.global_step)
                         for key, value in losses.items():
                             logger.info(f"{key}: {value}")
 
-                        logging_loss = tr_loss
+                        self.logging_loss = self.tr_loss
 
                     if (
                             self.config.local_rank in [-1, 0]
-                            and self.config.do_eval
+                            and self.do_eval
                             and self.config.logging_steps > 0
-                            and global_step % self.config.logging_steps == 0
+                            and self.global_step % self.config.logging_steps == 0
                             and evaluator is not None
                     ):
                         results = evaluator.evaluate(
                             model=model,
-                            prefix=f"step_{global_step}",
+                            prefix=f"step_{self.global_step}",
                             tb_writer=self.tb_writer,
-                            global_step=global_step,
+                            global_step=self.global_step,
                         )
                         f1 = results["f1"]
                         if f1 > best_f1:
                             best_f1 = f1
-                            best_global_step = global_step
+                            best_global_step = self.global_step
                             # Save model checkpoint
-                            output_dir = self.output_folder.joinpath(f"checkpoint-{global_step}")
+                            output_dir = self.output_folder.joinpath(f"checkpoint-{self.global_step}")
                             if not output_dir.is_dir():
                                 output_dir.mkdir()
 
@@ -233,7 +243,7 @@ class Trainer:
             json.dump({"best_f1": best_f1, "best_global_step": best_global_step}, f)
 
         self.tb_writer.close()
-        return global_step, tr_loss / global_step
+        return self.global_step, self.tr_loss / self.global_step
 
 
 def set_seed(seed: int, n_gpu: int) -> None:

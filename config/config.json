@@ -7,6 +7,7 @@
   "model": {
     "dev_mode": false,
     "train": true,
+    "eval": true,
     "params": {
       "embeds_dim": 768,
       "trainable_embeddings": false,
@@ -32,8 +33,7 @@
       "local_rank": -1,
       "gradient_accumulation_steps": 1,
       "seed": 42,
-      "logging_steps": 256,
-      "do_eval": true
+      "logging_steps": 256
     },
     "enable_cuda": true
   },

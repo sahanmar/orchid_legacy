@@ -42,7 +42,7 @@ class CorefDataset(Dataset):
         self.tokenizer = AutoTokenizer.from_pretrained(tokenizer_path)
         self.max_seq_length = max_seq_length
 
-        logger.info(f'Parsing input data: {str(data_path)}')
+        logger.info(f'Parsing input data from \"{str(data_path)}\"')
         assert data_path.exists() and \
                data_path.is_file() and \
                data_path.suffix.endswith('jsonl'), f'Incorrect input data file'

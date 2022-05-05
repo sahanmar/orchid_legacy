@@ -32,6 +32,14 @@ env_config = get_env_variables(
 )
 
 
+def _infer_device() -> str:
+    output = "cpu"
+    use_cuda = env_config.get("USE_CUDA")
+    if use_cuda is not None and int(use_cuda) and torch.cuda.is_available():
+        output = "cuda"
+    return output
+
+
 class AbstractOrchidConfig(metaclass=ABCMeta):
     class AbsentEnvironmentVariable(Exception):
         def __init__(self, var_name: str):
@@ -65,7 +73,7 @@ class AbstractOrchidConfig(metaclass=ABCMeta):
 
 @dataclass(frozen=True, init=False)
 class Context(AbstractOrchidConfig):
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = _infer_device()
     dtype = torch.float32
     n_gpu: int = torch.cuda.device_count()
 
@@ -124,7 +132,6 @@ class TrainingConfig(AbstractOrchidConfig):
     gradient_accumulation_steps: int
     seed: int
     logging_steps: int
-    do_eval: bool
     training_folder: str = str(
         AbstractOrchidConfig._get_absolute_path_from_env(var_name='OUTPUT_DIR')
     )
@@ -137,18 +144,18 @@ class TrainingConfig(AbstractOrchidConfig):
 class ModelConfig(AbstractOrchidConfig):
     dev_mode: bool
     train: bool
+    eval: bool
     params: ModelParameters
     training: TrainingConfig
-    enable_cuda: bool
 
     @staticmethod
     def from_dict(cfg: Dict[str, Any]) -> "ModelConfig":
         return ModelConfig(
-            cfg["dev_mode"],
-            cfg["train"],
-            ModelParameters(**cfg["params"]),
-            TrainingConfig(**cfg["training"]),
-            cfg["enable_cuda"],
+            dev_mode=cfg["dev_mode"],
+            train=cfg["train"],
+            eval=cfg["eval"],
+            params=ModelParameters(**cfg["params"]),
+            training=TrainingConfig(**cfg["training"]),
         )
 
 
@@ -206,10 +213,9 @@ class Config(AbstractOrchidConfig):
             config_path: Optional[Path] = None,
     ) -> "Config":
         if config_path is None:
-            config_path = \
-                Path(__file__).resolve().parent.joinpath('config.json')
-            _logger.warning(
-                f'No path specified, reading from {str(config_path)}'
+            config_path = cls._get_absolute_path_from_env('CONFIG_PATH')
+            _logger.info(
+                f'Reading configuration from {str(config_path)}'
             )
         cfg = cls._load_from_json(path=config_path)
         return Config(
