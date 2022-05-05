@@ -161,7 +161,7 @@ class CorefDataset(Dataset):
         clusters = self.pad_clusters_inside(clusters)
         return clusters
 
-    def pad_batch(self, batch, max_length):
+    def pad_batch(self, batch, max_length: int):
         max_length += 2  # we have additional two special tokens <s>, </s>
         padded_batch = []
         for example in batch:
@@ -238,7 +238,12 @@ class BucketBatchSampler(DataLoader):
     def prepare_eval_batches(self):
         batches = []
         for doc_key, elem in self.data_source:
-            batch = self.data_source.pad_batch([elem], len(elem.token_ids))
+            max_length = min(len(elem.token_ids), self.max_seq_len)
+            # print(max_length)
+            batch = self.data_source.pad_batch(
+                [elem],
+                max_length=max_length
+            )
             batches.append((doc_key, batch))
         return batches
 

@@ -64,6 +64,7 @@ class Evaluator:
             input_ids, attention_mask, gold_clusters = batch
 
             with torch.no_grad():
+                # print(input_ids.shape, attention_mask.shape)
                 outputs = model(input_ids=input_ids,
                                 attention_mask=attention_mask,
                                 gold_clusters=gold_clusters,
@@ -77,7 +78,7 @@ class Evaluator:
                 losses[key].append(val.item())
 
             outputs = outputs[1:-1]
-            
+
             batch_np = tuple(tensor.cpu().numpy() for tensor in batch)
             outputs_np = tuple(tensor.cpu().numpy() for tensor in outputs)
             for output in zip(*(batch_np + outputs_np)):

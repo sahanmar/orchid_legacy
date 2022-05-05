@@ -197,10 +197,10 @@ class Trainer:
                             and self.global_step % self.config.logging_steps == 0
                     ):
                         loss_to_write = (self.tr_loss - self.logging_loss) / self.config.logging_steps
-                        logger.info(f"loss step {self.global_step}: {loss_to_write}")
+                        logger.info(f"Step {self.global_step} loss: {loss_to_write}")
                         self.tb_writer.add_scalar("Training_Loss", loss_to_write, self.global_step)
                         for key, value in losses.items():
-                            logger.info(f"{key}: {value}")
+                            logger.info(f"Metric[{key}]: {value}")
 
                         self.logging_loss = self.tr_loss
 
