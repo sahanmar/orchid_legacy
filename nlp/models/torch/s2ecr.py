@@ -1,3 +1,5 @@
+from typing import Tuple
+
 import torch
 from torch.nn import Module, Linear, LayerNorm, Dropout
 from transformers import (
@@ -63,6 +65,7 @@ class S2EModel(BertPreTrainedModel):
         self.normalise_loss = args.normalise_loss
 
         self.encoding_model = LongformerModel(config)
+        self.encoding_model.resize_token_embeddings()
         # Freeze the encoding model parameters if necessary
         self.encoding_model.requires_grad_(args.trainable_embeddings)
 
@@ -101,13 +104,13 @@ class S2EModel(BertPreTrainedModel):
         size = (batch_size, max_k)
         idx = torch.arange(max_k, device=self.device).unsqueeze(0).expand(size)
         len_expanded = k.unsqueeze(1).expand(size)
-        return (idx < len_expanded).int()
+        return torch.less(idx, len_expanded).int()
 
-    def _prune_topk_mentions(self, mention_logits, attention_mask):
+    def _prune_topk_mentions(self, mention_logits: torch.Tensor, attention_mask: torch.Tensor) -> Tuple[
+        torch.Tensor, ...]:
         """
         :param mention_logits: Shape [batch_size, seq_length, seq_length]
         :param attention_mask: [batch_size, seq_length]
-        :param top_lambda:
         :return:
         """
         batch_size, seq_length, _ = mention_logits.size()
@@ -125,21 +128,22 @@ class S2EModel(BertPreTrainedModel):
         topk_mention_start_ids = torch.div(
             sorted_topk_1d_indices,
             seq_length,
-            rounding_mode='trunc'
+            rounding_mode='floor'
         )  # [batch_size, max_k]
         topk_mention_end_ids = sorted_topk_1d_indices % seq_length  # [batch_size, max_k]
 
         topk_mention_logits = mention_logits[torch.arange(batch_size).unsqueeze(-1).expand(batch_size, max_k),
                                              topk_mention_start_ids, topk_mention_end_ids]  # [batch_size, max_k]
 
-        topk_mention_logits = topk_mention_logits.unsqueeze(-1) + topk_mention_logits.unsqueeze(
-            -2)  # [batch_size, max_k, max_k]
+        topk_mention_logits = \
+            topk_mention_logits.unsqueeze(-1) + topk_mention_logits.unsqueeze(-2)  # [batch_size, max_k, max_k]
 
         return topk_mention_start_ids, topk_mention_end_ids, span_mask, topk_mention_logits
 
     def _mask_antecedent_logits(self, antecedent_logits, span_mask):
         # We now build the matrix for each pair of spans (i,j) - whether j is a candidate for being antecedent of i?
-        antecedents_mask = torch.ones_like(antecedent_logits, dtype=self.dtype).tril(diagonal=-1)  # [batch_size, k, k]
+        antecedents_mask = torch.triu(torch.ones_like(antecedent_logits, dtype=self.dtype),
+                                      diagonal=1)  # [batch_size, k, k]
         antecedents_mask = antecedents_mask * span_mask.unsqueeze(-1)  # [batch_size, k, k]
         antecedent_logits = mask_tensor(antecedent_logits, antecedents_mask)
         return antecedent_logits
@@ -189,20 +193,22 @@ class S2EModel(BertPreTrainedModel):
         if self.normalise_loss:
             per_example_loss = per_example_loss / losses.size(-1)
         loss = per_example_loss.mean()
+        if torch.isclose(loss, torch.tensor(0.)):
+            print('=======\n', gold_coref_logits, cluster_labels_after_pruning)
         return loss
 
-    def _get_mention_mask(self, mention_logits_or_weights):
+    def _get_mention_mask(self, mention_logits_or_weights: torch.Tensor) -> torch.Tensor:
         """
         Returns a tensor of size [batch_size, seq_length, seq_length] where valid spans
         (start <= end < start + max_span_length) are 1 and the rest are 0
         :param mention_logits_or_weights: Either the span mention logits or weights, size [batch_size, seq_length, seq_length]
         """
         mention_mask = torch.ones_like(mention_logits_or_weights, dtype=self.dtype)
-        mention_mask = mention_mask.triu(diagonal=0)
-        mention_mask = mention_mask.tril(diagonal=self.max_span_length - 1)
+        mention_mask = torch.triu(mention_mask, diagonal=0)  # Upper triangular part
+        mention_mask = torch.tril(mention_mask, diagonal=self.max_span_length - 1)  # Lower triangular part
         return mention_mask
 
-    def _calc_mention_logits(self, start_mention_reps, end_mention_reps):
+    def _calc_mention_logits(self, start_mention_reps: torch.Tensor, end_mention_reps: torch.Tensor) -> torch.Tensor:
         start_mention_logits = self.mention_start_classifier(start_mention_reps).squeeze(-1)  # [batch_size, seq_length]
         end_mention_logits = self.mention_end_classifier(end_mention_reps).squeeze(-1)  # [batch_size, seq_length]
 
@@ -215,7 +221,8 @@ class S2EModel(BertPreTrainedModel):
         mention_logits = mask_tensor(mention_logits, mention_mask)  # [batch_size, seq_length, seq_length]
         return mention_logits
 
-    def _calc_coref_logits(self, top_k_start_coref_reps, top_k_end_coref_reps):
+    def _calc_coref_logits(self, top_k_start_coref_reps: torch.Tensor,
+                           top_k_end_coref_reps: torch.Tensor) -> torch.Tensor:
         # s2s
         temp = self.antecedent_s2s_classifier(top_k_start_coref_reps)  # [batch_size, max_k, dim]
         top_k_s2s_coref_logits = torch.matmul(temp,

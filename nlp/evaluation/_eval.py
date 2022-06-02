@@ -1,9 +1,14 @@
 import json
 import os
 from collections import OrderedDict, defaultdict
+from typing import (
+    Dict,
+    Any
+)
 
 import numpy as np
 import torch
+from tqdm.auto import tqdm
 
 from config import Config, Context
 from data_processing.coref_dataset import (
@@ -25,12 +30,22 @@ logger = get_stream_logger('evaluator')
 class Evaluator:
     def __init__(self, config: Config):
         self.config = config
-        self.eval_dataset: CorefDataset = get_dataset(
+        eval_dataset: CorefDataset = get_dataset(
             'dev' if self.config.model.dev_mode else 'test',
             config=self.config
         )
+        self.eval_dataloader = BucketBatchSampler(
+            eval_dataset,
+            batch_size_1=True
+        )
 
-    def evaluate(self, model, prefix="", tb_writer=None, global_step=None):
+    def evaluate(
+            self,
+            model,
+            prefix: str = "",
+            tb_writer=None,
+            global_step=None
+    ) -> Dict[str, Any]:
 
         if self.config.model.training.evaluation_folder and \
                 not os.path.exists(self.config.model.training.evaluation_folder) and \
@@ -40,16 +55,9 @@ class Evaluator:
         # Note that DistributedSampler samples randomly
         # eval_sampler = SequentialSampler(eval_dataset) if args.local_rank == -1 else DistributedSampler(eval_dataset)
 
-        eval_dataloader = BucketBatchSampler(
-            self.eval_dataset,
-            max_seq_len=self.config.encoding.max_seq_len,
-            max_total_seq_len=self.config.text.max_total_seq_len,
-            batch_size_1=True
-        )
-
         # Evaluation
-        logger.info("***** Running Evaluation {} *****".format(prefix))
-        logger.info("Number of examples: %d", len(self.eval_dataset))
+        logger.info("***** Running evaluation {} *****".format(prefix))
+        logger.info("Number of examples: %d", len(self.eval_dataloader))
         model.eval()
 
         post_pruning_mention_evaluator = MentionEvaluator()
@@ -58,18 +66,29 @@ class Evaluator:
         losses = defaultdict(list)
         doc_to_prediction = {}
         doc_to_subtoken_map = {}
-        for (doc_key, subtoken_maps), batch in eval_dataloader:
+        dataloader_iter = tqdm(self.eval_dataloader, desc='Evaluation')
+        for (doc_key, subtoken_maps), batch in dataloader_iter:
 
             batch = tuple(tensor.to(Context.device) for tensor in batch)
             input_ids, attention_mask, gold_clusters = batch
 
             with torch.no_grad():
                 # print(input_ids.shape, attention_mask.shape)
-                outputs = model(input_ids=input_ids,
-                                attention_mask=attention_mask,
-                                gold_clusters=gold_clusters,
-                                return_all_outputs=True)
+                try:
+                    outputs = model(input_ids=input_ids,
+                                    attention_mask=attention_mask,
+                                    gold_clusters=gold_clusters,
+                                    return_all_outputs=True)
+                except RuntimeError as ex:
+                    logger.error(f'Could not process the following inputs:\n'
+                                 f'input_ids={input_ids}\n'
+                                 f'attention_mask={attention_mask}\n'
+                                 f'gold_clusters={gold_clusters}',
+                                 exc_info=ex)
                 loss_dict = outputs[-1]
+            dataloader_iter.set_postfix(
+                {k: v.item() for k, v in loss_dict.items()}
+            )
 
             if Context.n_gpu > 1:
                 loss_dict = {key: val.mean() for key, val in loss_dict.items()}
@@ -87,16 +106,26 @@ class Evaluator:
                 mention_to_gold_clusters = extract_mentions_to_predicted_clusters_from_clusters(gold_clusters)
                 gold_mentions = list(mention_to_gold_clusters.keys())
 
-                starts, end_offsets, coref_logits, mention_logits = output[-4:]
+                (start_offsets,
+                 end_offsets,
+                 coref_logits,
+                 mention_logits) = output[-4:]
 
-                max_antecedents = np.argmax(coref_logits, axis=1).tolist()
+                max_antecedents = np.argmax(coref_logits, axis=1)
                 mention_to_antecedent = {
-                    ((int(start), int(end)), (int(starts[max_antecedent]), int(end_offsets[max_antecedent]))) for
-                    start, end, max_antecedent in
-                    zip(starts, end_offsets, max_antecedents) if max_antecedent < len(starts)}
+                    (
+                        (int(start),
+                         int(end)),
+                        (int(start_offsets[max_antecedent]),
+                         int(end_offsets[max_antecedent]))
+                    )
+                    for start, end, max_antecedent in
+                    zip(start_offsets, end_offsets, max_antecedents)
+                    if max_antecedent < len(start_offsets)
+                }
 
                 predicted_clusters, _ = extract_clusters_for_decode(mention_to_antecedent)
-                candidate_mentions = list(zip(starts, end_offsets))
+                candidate_mentions = list(zip(start_offsets, end_offsets))
 
                 mention_to_predicted_clusters = extract_mentions_to_predicted_clusters_from_clusters(predicted_clusters)
                 predicted_mentions = list(mention_to_predicted_clusters.keys())
@@ -107,15 +136,19 @@ class Evaluator:
                 doc_to_prediction[doc_key] = predicted_clusters
                 doc_to_subtoken_map[doc_key] = subtoken_maps
 
-        post_pruning_mention_precision, post_pruning_mentions_recall, post_pruning_mention_f1 = post_pruning_mention_evaluator.get_prf()
-        mention_precision, mentions_recall, mention_f1 = mention_evaluator.get_prf()
+        (post_pruning_mention_precision,
+         post_pruning_mentions_recall,
+         post_pruning_mention_f1) = post_pruning_mention_evaluator.get_prf()
+        (mention_precision,
+         mentions_recall,
+         mention_f1) = mention_evaluator.get_prf()
         prec, rec, f1 = coref_evaluator.get_prf()
 
         results = [(key, sum(val) / len(val)) for key, val in losses.items()]
         results += [
-            ("post pruning mention precision", post_pruning_mention_precision),
-            ("post pruning mention recall", post_pruning_mentions_recall),
-            ("post pruning mention f1", post_pruning_mention_f1),
+            ("post-pruning mention precision", post_pruning_mention_precision),
+            ("post-pruning mention recall", post_pruning_mentions_recall),
+            ("post-pruning mention f1", post_pruning_mention_f1),
             ("mention precision", mention_precision),
             ("mention recall", mentions_recall),
             ("mention f1", mention_f1),
@@ -123,33 +156,39 @@ class Evaluator:
             ("recall", rec),
             ("f1", f1)
         ]
-        logger.info("***** Evaluation Results {} *****".format(prefix))
+        logger.info("Evaluation Results: {}".format(prefix))
         for key, values in results:
             if isinstance(values, float):
-                logger.info(f"  {key} = {values:.3f}")
+                logger.info(f"{key:32} = {values:.3f}")
             else:
-                logger.info(f"  {key} = {values}")
+                logger.info(f"{key:32} = {values}")
             if tb_writer is not None and global_step is not None:
                 tb_writer.add_scalar(key, values, global_step)
 
         if self.config.model.training.evaluation_folder:
-            output_eval_file = os.path.join(self.config.model.training.evaluation_folder, "eval_results.txt")
+            output_eval_file = os.path.join(
+                self.config.model.training.evaluation_folder,
+                "eval_results.txt"
+            )
             with open(output_eval_file, "a") as writer:
                 if prefix:
                     writer.write(f'\n{prefix}:\n')
                 for key, values in results:
                     if isinstance(values, float):
-                        writer.write(f"{key} = {values:.3f}\n")
+                        writer.write(f"{key:32}={values:.3f}\n")
                     else:
-                        writer.write(f"{key} = {values}\n")
+                        writer.write(f"{key:32}={values}\n")
 
         results = OrderedDict(results)
         # TODO: fill in the experiment name from env
         results["experiment_name"] = "SOME_EXPERIMENT"
         results["data"] = prefix
         with open(
-                os.path.join(self.config.model.training.training_folder, "results.jsonl"),
-                "a+"
+                os.path.join(
+                    self.config.model.training.training_folder,
+                    "results.jsonl"
+                ),
+                mode="a+"
         ) as f:
             f.write(json.dumps(results) + '\n')
 

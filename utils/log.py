@@ -14,7 +14,7 @@ def get_logging_level(verbosity: int = 2, verbosity_mapping: Optional[Dict[int, 
     if verbosity_mapping is None:
         global VERBOSITY_MAPPING
         verbosity_mapping = VERBOSITY_MAPPING
-    _lvl = verbosity_mapping.get(verbosity)
+    _lvl = verbosity_mapping.get(int(verbosity))
     if _lvl is None:
         warnings.warn(f'Invalid passed verbosity level, defaulting to DEBUG: {verbosity}')
         _lvl = logging.DEBUG

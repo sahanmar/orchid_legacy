@@ -8,15 +8,16 @@ from typing import (
 
 import numpy as np
 import torch
+from torch.optim import AdamW
 from torch.utils.data.dataloader import DataLoader
 from torch.utils.tensorboard import SummaryWriter
-from tqdm import tqdm, trange
-from transformers import AdamW, get_linear_schedule_with_warmup
+from tqdm.auto import tqdm, trange
+from transformers import get_linear_schedule_with_warmup
 
 from config import Context, Config
-from utils.log import get_stream_logger
-from nlp.models.torch.s2ecr import S2EModel
 from nlp.evaluation import Evaluator
+from nlp.models.torch.s2ecr import S2EModel
+from utils.log import get_stream_logger
 
 logger = get_stream_logger('s2e-training')
 
@@ -145,8 +146,6 @@ class Trainer:
         self.global_step = 0
         self.tr_loss, self.logging_loss = 0.0, 0.0
         model.zero_grad()
-        # Added here for reproducibility
-        set_seed(self.config.seed, n_gpu=Context.n_gpu)
 
         train_iterator = trange(
             0, int(self.config.training_epochs), desc="Epoch", disable=self.config.local_rank not in [-1, 0]
@@ -184,6 +183,9 @@ class Trainer:
                     loss.backward()
 
                 self.tr_loss += loss.item()
+                # Update the progress bar
+                epoch_iterator.set_postfix({'loss': loss.item()})
+                # Compute the accumulated gradients
                 if (step + 1) % self.config.gradient_accumulation_steps == 0:
                     optimizer.step()
                     scheduler.step()  # Update learning rate schedule
@@ -197,7 +199,7 @@ class Trainer:
                             and self.global_step % self.config.logging_steps == 0
                     ):
                         loss_to_write = (self.tr_loss - self.logging_loss) / self.config.logging_steps
-                        logger.info(f"Step {self.global_step} loss: {loss_to_write}")
+                        logger.info(f"Step {self.global_step} aggregated loss: {loss_to_write}")
                         self.tb_writer.add_scalar("Training_Loss", loss_to_write, self.global_step)
                         for key, value in losses.items():
                             logger.info(f"Metric[{key}]: {value}")
@@ -244,11 +246,3 @@ class Trainer:
 
         self.tb_writer.close()
         return self.global_step, self.tr_loss / self.global_step
-
-
-def set_seed(seed: int, n_gpu: int) -> None:
-    random.seed(seed)
-    np.random.seed(seed)
-    torch.manual_seed(seed)
-    if n_gpu > 0:
-        torch.cuda.manual_seed_all(seed)

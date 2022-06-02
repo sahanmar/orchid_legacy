@@ -1,11 +1,22 @@
+import random
+
+import numpy as np
 import torch
 
 from config.config import NULL_ID_FOR_COREF
 
 
+def set_seed(seed: int, n_gpu: int) -> None:
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    if n_gpu > 0:
+        torch.cuda.manual_seed_all(seed)
+
+
 def extract_clusters(gold_clusters):
     gold_clusters = [
-        tuple(tuple(m) for m in gc if NULL_ID_FOR_COREF not in m) for gc in gold_clusters.tolist()
+        tuple(tuple(m) for m in gc if NULL_ID_FOR_COREF not in m) for gc in gold_clusters
     ]
     gold_clusters = [cluster for cluster in gold_clusters if len(cluster) > 0]
     return gold_clusters
@@ -38,9 +49,14 @@ def extract_clusters_for_decode(mention_to_antecedent):
     return clusters, mention_to_cluster
 
 
-def mask_tensor(t, mask):
-    t = t + ((1.0 - mask.float()) * -10000.0)
-    t = torch.clamp(t, min=-10000.0, max=10000.0)
+def mask_tensor(
+        t: torch.Tensor,
+        mask: torch.Tensor,
+        mask_val: int = 10_000,
+) -> torch.Tensor:
+    assert mask_val > 0., 'Mask value must be a positive int'
+    t = t + ((1. - mask.float()) * (-mask_val))
+    t = torch.clamp(t, min=-mask_val, max=mask_val)
     return t
 
 

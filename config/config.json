@@ -5,16 +5,16 @@
     "dev": "dev.english.jsonl"
   },
   "model": {
-    "dev_mode": false,
+    "dev_mode": true,
     "train": true,
-    "eval": true,
+    "eval": false,
     "params": {
       "embeds_dim": 768,
       "trainable_embeddings": false,
       "max_span_length": 1000,
       "top_lambda": 0.4,
       "dropout_prob": 0.3,
-      "ffnn_size": 0,
+      "ffnn_size": 1024,
       "normalise_loss": false,
       "batch_size": 1
     },

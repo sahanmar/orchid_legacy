@@ -12,11 +12,9 @@ from utils.env import get_env_variables, resolve_env
 from utils.log import get_stream_logger
 from utils.types import TensorType, Optional
 
-_logger = get_stream_logger('config')
-
 # Constants
-SPEAKER_START = 49518  # 'Ġ#####'
-SPEAKER_END = 22560  # 'Ġ###'
+SPEAKER_START = 49518  # ' #####'
+SPEAKER_END = 22560  # ' ###'
 NULL_ID_FOR_COREF = 0
 
 # Types
@@ -30,6 +28,8 @@ env_config = get_env_variables(
     path_shared=__shared_env_path,
     path_secret=__secret_env_path if __secret_env_path.exists() and __secret_env_path.is_file() else None
 )
+VERBOSITY = env_config.get('VERBOSITY', 3)
+_logger = get_stream_logger('config', verbosity=VERBOSITY)
 
 
 def _infer_device() -> str:
