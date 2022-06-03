@@ -142,8 +142,8 @@ class S2EModel(BertPreTrainedModel):
 
     def _mask_antecedent_logits(self, antecedent_logits, span_mask):
         # We now build the matrix for each pair of spans (i,j) - whether j is a candidate for being antecedent of i?
-        antecedents_mask = torch.triu(torch.ones_like(antecedent_logits, dtype=self.dtype),
-                                      diagonal=1)  # [batch_size, k, k]
+        antecedents_mask = torch.tril(torch.ones_like(antecedent_logits, dtype=self.dtype),
+                                      diagonal=-1)  # [batch_size, k, k]
         antecedents_mask = antecedents_mask * span_mask.unsqueeze(-1)  # [batch_size, k, k]
         antecedent_logits = mask_tensor(antecedent_logits, antecedents_mask)
         return antecedent_logits
