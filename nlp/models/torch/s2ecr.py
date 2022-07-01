@@ -212,7 +212,7 @@ class S2EModel(BertPreTrainedModel):
         )
         _zero = torch.tensor(0.).to(self.device)
         if torch.isclose(ml_loss, _zero) and \
-                torch.allclose(gold_coref_logits[:, :, :-1], _zero):
+                torch.allclose(cluster_labels_after_pruning[:, :, :-1], _zero):
             _logger.warning(
                 f'Wow, the likelihood loss is 0, '
                 f'but the model learnt no coreference clusters at all :/'
