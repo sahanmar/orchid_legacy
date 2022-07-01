@@ -34,8 +34,8 @@ _logger = get_stream_logger('config', verbosity=VERBOSITY)
 
 def _infer_device() -> str:
     output = "cpu"
-    use_cuda = env_config.get("USE_CUDA")
-    if use_cuda is not None and int(use_cuda) and torch.cuda.is_available():
+    use_gpu = env_config.get("USE_GPU")
+    if use_gpu is not None and int(use_gpu) and torch.cuda.is_available():
         output = "cuda"
     return output
 
@@ -113,6 +113,7 @@ class ModelParameters(AbstractOrchidConfig):
     ffnn_size: int
     normalise_loss: bool
     batch_size: int
+    bce_weight: float
 
 
 @dataclass(frozen=True)

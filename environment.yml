@@ -1,14 +1,17 @@
 name: orchid
 channels:
-  - anaconda
+  - 'https://repo.continuum.io/pkgs/free'
+  - conda-forge
+  - defaults
+  - pytorch
 dependencies:
-  - python == 3.8.12
+  - python == 3.9
   - numpy
   - tqdm
   - nltk
   - jupyter
   - pytorch
-  - cudatoolkit == 11.3
+  - pip
   - pip:
     - black
     - pathlib

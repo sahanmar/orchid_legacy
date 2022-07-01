@@ -33,11 +33,12 @@ class OrchidPipeline:
             )
             self.train_dataloader = BucketBatchSampler(
                 train_dataset,
-                batch_size_1=True
+                batch_size_1=False
             )
             logger.info('Initializing the trainer')
             self.trainer = Trainer(config=self.config)
         else:
+            self.trainer = None
             self.train_dataloader = None
         # Evaluator
         if self.config.model.eval:

@@ -31,6 +31,7 @@ from utils.log import get_stream_logger
 CorefCluster = NewType('CorefCluster', List[Union[List[int], Tuple[int, int]]])
 RawExample = NewType('RawExample', Tuple[Any, List[str], List[CorefCluster], List[str]])
 ModelInputExample = NewType('Example', Tuple[torch.Tensor, ...])
+ModelInputMetadata = NewType('ModelInputMetadata', Tuple[str, List[int]])
 
 logger = get_stream_logger(Path(__file__).stem, verbosity=VERBOSITY)
 
@@ -229,11 +230,12 @@ class CorefDataset(Dataset):
             self,
             batch: List[PreEncodedExample],
             max_length: Optional[int] = None
-    ) -> ModelInputExample:
+    ) -> Tuple[List[ModelInputMetadata], ModelInputExample]:
         if max_length is None:
             max_length = self.model_max_length
         # Two additional special tokens <s>, </s>
         padded_batch = []
+        input_metadata = []
         for example in batch:
             encoded_dict = self.tokenizer.prepare_for_model(
                 example.token_ids,
@@ -257,6 +259,11 @@ class CorefDataset(Dataset):
                 encoded_dict["attention_mask"],
                 torch.tensor(clusters)
             ))
+            input_metadata.append(
+                ModelInputMetadata(
+                    (example.doc_key, example.end_token_idx_to_word_idx)
+                )
+            )
         tensor_batch = ModelInputExample(tuple(
             torch.stack(
                 [example[i].squeeze() for example in padded_batch],
@@ -264,7 +271,7 @@ class CorefDataset(Dataset):
             )
             for i in range(len(padded_batch[-1] if padded_batch else 0))
         ))
-        return tensor_batch
+        return input_metadata, tensor_batch
 
 
 # noinspection DuplicatedCode
@@ -283,20 +290,20 @@ class BucketBatchSampler(DataLoader):
                                len(dataset[0].token_ids))
         self.batches = self.prepare_batches() if not batch_size_1 else self.prepare_eval_batches()
 
-    def prepare_batches(self):
+    def prepare_batches(self) -> List[Tuple[List[ModelInputMetadata], ModelInputExample]]:
         batches = []
         batch = []
         per_example_batch_len = 0
-        for _, elem in self.data_source:
+        for example in self.data_source:
             if len(batch) == 0:
                 # TODO change to config.attention_window
-                per_example_batch_len = self.calc_effective_per_example_batch_len(len(elem.token_ids))
+                per_example_batch_len = self.calc_effective_per_example_batch_len(len(example.token_ids))
             elif (len(batch) + 1) * per_example_batch_len > self.max_seq_len:
                 batch = self.data_source.pad_batch(batch, max_length=self.max_seq_len)
                 batches.append(batch)
                 batch = []
-                per_example_batch_len = self.calc_effective_per_example_batch_len(len(elem.token_ids))
-            batch.append(elem)
+                per_example_batch_len = self.calc_effective_per_example_batch_len(len(example.token_ids))
+            batch.append(example)
         if len(batch) == 0:
             return batches
         batch = self.data_source.pad_batch(batch, max_length=self.max_seq_len)
@@ -315,12 +322,14 @@ class BucketBatchSampler(DataLoader):
     def calc_effective_per_example_batch_len(example_len: int) -> int:
         return math.ceil((example_len + 2) / 512) * 512
 
-    def prepare_eval_batches(self) -> List[Tuple[Tuple[str, List[int]], ModelInputExample]]:
+    def prepare_eval_batches(
+            self
+    ) -> List[Tuple[List[ModelInputMetadata], ModelInputExample]]:
         batches = []
         for example in self.data_source:
             max_length = min(len(example.token_ids), self.max_seq_len)
             batch = self.data_source.pad_batch([example], max_length=max_length)
-            batches.append(((example.doc_key, example.end_token_idx_to_word_idx), batch))
+            batches.append(batch)
         return batches
 
 

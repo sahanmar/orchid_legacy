@@ -56,7 +56,7 @@ class Evaluator:
         # eval_sampler = SequentialSampler(eval_dataset) if args.local_rank == -1 else DistributedSampler(eval_dataset)
 
         # Evaluation
-        logger.info("***** Running evaluation {} *****".format(prefix))
+        logger.info("***** Running evaluation \"{}\" *****".format(prefix))
         logger.info("Number of examples: %d", len(self.eval_dataloader))
         model.eval()
 
@@ -67,8 +67,9 @@ class Evaluator:
         doc_to_prediction = {}
         doc_to_subtoken_map = {}
         dataloader_iter = tqdm(self.eval_dataloader, desc='Evaluation')
-        for (doc_key, subtoken_maps), batch in dataloader_iter:
-
+        for doc_metadata, batch in dataloader_iter:
+            assert len(doc_metadata) == 1, 'batch_size=1 is expected'
+            doc_key, subtoken_maps = doc_metadata[0]
             batch = tuple(tensor.to(Context.device) for tensor in batch)
             input_ids, attention_mask, gold_clusters = batch
 
@@ -156,7 +157,7 @@ class Evaluator:
             ("recall", rec),
             ("f1", f1)
         ]
-        logger.info("Evaluation Results: {}".format(prefix))
+        logger.info("Evaluation results: {}".format(prefix))
         for key, values in results:
             if isinstance(values, float):
                 logger.info(f"{key:32} = {values:.3f}")

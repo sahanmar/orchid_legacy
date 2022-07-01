@@ -7,7 +7,7 @@
   "model": {
     "dev_mode": true,
     "train": true,
-    "eval": false,
+    "eval": true,
     "params": {
       "embeds_dim": 768,
       "trainable_embeddings": false,
@@ -16,7 +16,8 @@
       "dropout_prob": 0.3,
       "ffnn_size": 1024,
       "normalise_loss": false,
-      "batch_size": 1
+      "batch_size": 1,
+      "bce_weight": 0.5
     },
     "training": {
       "split_value": 0.9,
@@ -33,7 +34,7 @@
       "local_rank": -1,
       "gradient_accumulation_steps": 1,
       "seed": 42,
-      "logging_steps": 256
+      "logging_steps": 128
     },
     "enable_cuda": true
   },

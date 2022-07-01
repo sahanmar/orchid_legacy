@@ -1,12 +1,10 @@
 import json
-import random
 from pathlib import Path
 from typing import (
     Tuple,
     Optional
 )
 
-import numpy as np
 import torch
 from torch.optim import AdamW
 from torch.utils.data.dataloader import DataLoader
@@ -137,8 +135,9 @@ class Trainer:
             )
 
         # Train!
-        logger.info("***** Running training *****")
-        logger.info("Number of examples = %d", sum([len(batch) for batch in batched_data]))
+        logger.info("***** Running Trainer *****")
+        logger.info("Number of examples = %d", sum([len(batch[0]) for batch in batched_data]))
+        logger.info("Number of batches = %d", len(batched_data))
         logger.info("Number of epochs = %d", self.config.training_epochs)
         logger.info("Gradient accumulation steps = %d", self.config.gradient_accumulation_steps)
         logger.info("Total optimization steps = %d", t_total)
@@ -153,8 +152,8 @@ class Trainer:
 
         best_f1 = -1
         best_global_step = -1
-        for _ in train_iterator:
-            epoch_iterator = tqdm(batched_data, desc="Iteration", disable=self.config.local_rank not in [-1, 0])
+        for epoch_n in train_iterator:
+            epoch_iterator = tqdm(batched_data, desc=f"Epoch {epoch_n}", disable=self.config.local_rank not in [-1, 0])
             for step, batch in enumerate(epoch_iterator):
                 # print(batch)Î
                 batch = tuple(tensor.to(Context.device) for tensor in batch[1])
@@ -184,7 +183,9 @@ class Trainer:
 
                 self.tr_loss += loss.item()
                 # Update the progress bar
-                epoch_iterator.set_postfix({'loss': loss.item()})
+                epoch_iterator.set_postfix(
+                    {metric: value.item() for metric, value in losses.items()}
+                )
                 # Compute the accumulated gradients
                 if (step + 1) % self.config.gradient_accumulation_steps == 0:
                     optimizer.step()
